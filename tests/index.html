@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>测试requirejs,seajs,self</title>
+    <script src="../often/require2.1.10,jquery1.9.1.js" type="text/javascript"></script>
+    <!--<script src="../often/sea.js" type="text/javascript"></script>-->
+    <script src="../bd.js" type="text/javascript"></script>
+    <script>
+        $(function(){
+            _bd('#for1');
+        })
+    </script>
+</head>
+<body>
+<form id="for1" action="">
+    <p><input type="text" name="user[name]" bd-rule="username" placeholder="用户名"></p>
+    <p><input type="password" name="user[pwd]" bd-rule="password" placeholder="密码"></p>
+    <button type="submit">提交</button>
+</form>
+</body>
+</html>
