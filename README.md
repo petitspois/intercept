@@ -1,9 +1,15 @@
 
-intercept.js  超简单表单验证解决方案
+###intercept.js  超简单表单验证解决方案
 ----------  
-# 快速操作，只需要一行代码
+#### 快速操作，只需要一行代码
+
+#### 第一步引入 **intercept.js**
+```html
+  <script type="text/javascript" src="intercept.js"></script>
+```
+#### 第二步在js代码块中执行一下
 ```js
-$it();
+  $it();
 ```
 # 兼容
 * ![ie10](http://ydrimg.oss-cn-hangzhou.aliyuncs.com/20140919111504913271952205.png) IE8+
