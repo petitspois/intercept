@@ -12,8 +12,11 @@
 
     "use strict";
 
+    //forms集合
     var ruleArray = {};
 
+    //简单过滤后的dom
+    var controller = {};
 
     var it = function (selector) {
         var self = it.prototype,
@@ -78,31 +81,44 @@
                 }
             }
         }
-        //执行清除it字段的其他原生属性
-        $.getClearAttr();
+        //获得整洁的it字段
+        $.getNeatField();
     }
 
-    //清除原生属性，获取it属性
-    it.prototype.getClearAttr = function () {
+    //获取纯洁处理对象
+    it.prototype.getNeatField = function () {
         if (!$.isEmptyObject(ruleArray)) {
-            if (ruleArray.nodeName) {
-                defaults.clearOriginal && $.clearOriginal(ruleArray);
-            } else {
-                alert(2)
+            ruleArray = ruleArray.nodeName ? [ruleArray] : ruleArray;
+            for (var prop in ruleArray) {
+                var frChild = ruleArray[prop].elements;
+                controller[prop] = [];
+                for (var i = 0, el; el = frChild[i++];) {
+                    if ($.filterType(el)) {
+                        controller[prop].push(el);
+                    }
+                }
             }
+
         }
     }
 
-    //清除所有html5约束
-    it.prototype.clearOriginal = function (node) {
-        node = node.elements;
-
-        console.log(node)
+    //简单的serialize
+    it.prototype.filterType = function (node) {
+        switch (node.type) {
+            case undefined:
+            case 'file':
+            case 'submit':
+            case 'reset':
+            case 'button':
+            case 'fieldset':
+                break;
+            default:
+                if (node.name.length) {
+                    return true;
+                }
+        }
     }
 
-    it.prototype.findIt = function (node) {
-        console.log(node)
-    }
 
     it.prototype.on = function (event, fn) {
         var self = this,
@@ -154,6 +170,10 @@
 
     $.ready(function () {
         $.init();
+
+        it(controller.top[0]).on('focusout',function(){
+            console.log(this.value);
+        })
 
     });
 
