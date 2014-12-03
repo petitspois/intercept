@@ -15,7 +15,7 @@
     //forms集合
     var ruleArray = {};
 
-    //简单过滤后的dom
+    //简单过滤后的dom,以及初始状态
     var controller = {};
 
     var it = function (selector) {
@@ -88,17 +88,20 @@
     //获取纯洁处理对象
     it.prototype.getNeatField = function () {
         if (!$.isEmptyObject(ruleArray)) {
-            ruleArray = ruleArray.nodeName ? [ruleArray] : ruleArray;
+            ruleArray = ruleArray.nodeName ? {'it': ruleArray} : ruleArray;
             for (var prop in ruleArray) {
                 var frChild = ruleArray[prop].elements;
-                controller[prop] = [];
+                controller[prop] = {};
+                controller[prop]['status'] = false;
+                controller[prop]['elem'] = [];
                 for (var i = 0, el; el = frChild[i++];) {
                     if ($.filterType(el)) {
-                        controller[prop].push(el);
+                        controller[prop]['elem'].push(el);
                     }
                 }
             }
-
+        } else {
+            throw new SyntaxError('请确认表单form标签已有"it-controller"属性!');
         }
     }
 
@@ -118,8 +121,36 @@
                 }
         }
     }
+    /* form--初始化 end */
 
 
+    /* formelements 事件捆绑 */
+    it.prototype.events = function () {
+        controller && void function () {
+            var prop, el;
+            for (prop in controller) {
+                var i = 0;
+                while (el = controller[prop]['elem'][i++]) {
+                    switch (el.type) {
+                        case 'select-one':
+                        case 'select-multiple':
+                            it(el).on('change', function () {
+
+                            });
+                            break;
+                        default:
+                            it(el).on('focusout', function () {
+                                $scope[this.name] = this.value;
+                                $scope.$digest();
+                            });
+                    }
+                }
+            }
+            ;
+        }();
+    }
+
+    /* formelements 事件捆绑 end */
     it.prototype.on = function (event, fn) {
         var self = this,
             elements = self._elem;
@@ -156,11 +187,45 @@
     }
 
     //////////////
+    //   watch  //
+    //////////////
+
+    var Scope = function () {
+        this.$$watchers = [];
+    }
+
+    Scope.prototype.$watch = function (watchExp, listener) {
+        this.$$watchers.push({
+            watchExp: watchExp,
+            listener: listener || function () {
+            }
+        });
+    }
+
+    Scope.prototype.$digest = function () {
+        var dirty;
+        do {
+            var i = 0, watcher;
+            dirty = false;
+            while (watcher = this.$$watchers[i++]) {
+                var newValue = watcher.watchExp(),
+                    oldValue = watcher.last;
+                    oldValue !== newValue && (
+                        watcher.listener(newValue,oldValue),
+                        dirty = true,
+                        watcher.last = newValue
+                    );
+            }
+        } while (dirty);
+    }
+
+
+    //////////////
     //   实例化  //
     //////////////
 
     var $ = new it();
-
+    var $scope = new Scope();
     var defaults = {
         'clearOriginal': true
     }
@@ -169,11 +234,16 @@
     $.mixIn(defaults, options.base);
 
     $.ready(function () {
+        //初始化获得纯净form-elements
         $.init();
+        //绑定事件处理
+        $.events();
 
-        it(controller.top[0]).on('focusout',function(){
-            console.log(this.value);
-        })
+        $scope.$watch(function(){
+            return $scope.username;
+        },function(newValue,oldValue){
+             console.log(newValue,oldValue);
+        });
 
     });
 
