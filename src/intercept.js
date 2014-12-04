@@ -22,7 +22,7 @@
         var self = it.prototype,
             elements = [];
         if (typeof selector === 'string') {
-            elements = [].slice.call(document.querySelectorAll(selector));
+            elements = $.toArray(document.querySelectorAll(selector));
         } else if (typeof selector === 'object' && selector.attributes) {
             elements = [selector];
         }
@@ -60,6 +60,21 @@
                 }
             }
             return target;
+        },
+        toArray:function(iterable){
+            if('\v'=='v'){
+                alert(1)
+                var len = iterable.length,arr = new Array(len);
+                while(len--)
+                    arr[len] = iterable[len];
+                return arr;
+            }
+            return [].slice.call(iterable);
+        },
+        getItAttr:function(attrs){
+            var itA= [];
+            console.log(111)
+            return itA;
         }
     }
 
@@ -114,6 +129,8 @@
             case 'reset':
             case 'button':
             case 'fieldset':
+            case  'radio':
+            case  'checkbox':
                 break;
             default:
                 if (node.name.length) {
@@ -121,8 +138,6 @@
                 }
         }
     }
-    /* form--初始化 end */
-
 
     /* formelements 事件捆绑 */
     it.prototype.events = function () {
@@ -134,23 +149,41 @@
                     switch (el.type) {
                         case 'select-one':
                         case 'select-multiple':
-                            it(el).on('change', function () {
-
-                            });
+                            void function (p) {
+                                $.watch(p, el.name, el);
+                                it(el).on('change', function () {
+                                    var me = this;
+                                    $scope[p + '$' + me.name] = me.value;
+                                    $scope.$digest();
+                                });
+                            }(prop);
                             break;
                         default:
-                            it(el).on('focusout', function () {
-                                $scope[this.name] = this.value;
-                                $scope.$digest();
-                            });
+                             void function (p) {
+                                $.watch(p, el.name, el);
+                                it(el).on('focusout', function () {
+                                    var me = this;
+                                    $scope[p + '$' + me.name] = me.value;
+                                    $scope.$digest();
+                                });
+                            }(prop);
                     }
                 }
             }
-            ;
         }();
     }
+    /*   绑定watch  */
+    it.prototype.watch = function(controller, name, elem){
+        $scope.$watch(function () {
+            return $scope[controller+'$'+name];
+        }, function (newValue, oldValue) {
+            var itAttr = $.getItAttr(elem.attributes);
+            console.log(itAttr)
 
-    /* formelements 事件捆绑 end */
+            //执行过滤行为
+        });
+    }
+
     it.prototype.on = function (event, fn) {
         var self = this,
             elements = self._elem;
@@ -210,13 +243,19 @@
             while (watcher = this.$$watchers[i++]) {
                 var newValue = watcher.watchExp(),
                     oldValue = watcher.last;
-                    oldValue !== newValue && (
-                        watcher.listener(newValue,oldValue),
+                oldValue !== newValue && (
+                    watcher.listener(newValue, oldValue),
                         dirty = true,
                         watcher.last = newValue
                     );
             }
         } while (dirty);
+    }
+
+    Scope.prototype.filter = {
+        'it-maxleng':function(value){
+            return
+        }
     }
 
 
@@ -238,12 +277,6 @@
         $.init();
         //绑定事件处理
         $.events();
-
-        $scope.$watch(function(){
-            return $scope.username;
-        },function(newValue,oldValue){
-             console.log(newValue,oldValue);
-        });
 
     });
 
