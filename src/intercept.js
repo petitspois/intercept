@@ -12,11 +12,19 @@
 
     "use strict";
 
+    var op = Object.prototype;
+
+    var firefox = !!window.netscape;
+
+    var go = firefox ? 'blur' : 'focusout';
+
     //forms集合
     var ruleArray = {};
 
     //简单过滤后的dom,以及初始状态
     var controller = {};
+
+    var flawless = [];
 
     var it = function (selector) {
         var self = it.prototype,
@@ -61,20 +69,28 @@
             }
             return target;
         },
-        toArray:function(iterable){
-            if('\v'=='v'){
-                alert(1)
-                var len = iterable.length,arr = new Array(len);
-                while(len--)
+        toArray: function (iterable) {
+            if ('\v' == 'v') {
+                var len = iterable.length, arr = new Array(len);
+                while (len--)
                     arr[len] = iterable[len];
                 return arr;
             }
             return [].slice.call(iterable);
         },
-        getItAttr:function(attrs){
-            var itA= [];
-            console.log(111)
+        getItAttr: function (attrs) {
+            var itA = [], i = 0, attr,
+                chaos = $.toArray(attrs);
+            while (attr = chaos[i++]) {
+                var nodeName = attr.nodeName;
+                (nodeName.charAt(2) === '-' && nodeName.slice(0, 2) === 'it') && itA.push(attr);
+            }
             return itA;
+        },
+        camelize: function (target) {
+            return target.replace(/[-][^-]/g, function(match) {
+                return match.charAt(1).toUpperCase();
+            });
         }
     }
 
@@ -159,9 +175,9 @@
                             }(prop);
                             break;
                         default:
-                             void function (p) {
+                            void function (p) {
                                 $.watch(p, el.name, el);
-                                it(el).on('focusout', function () {
+                                it(el).on(go, function () {
                                     var me = this;
                                     $scope[p + '$' + me.name] = me.value;
                                     $scope.$digest();
@@ -173,12 +189,23 @@
         }();
     }
     /*   绑定watch  */
-    it.prototype.watch = function(controller, name, elem){
+    it.prototype.watch = function (controller, name, elem) {
         $scope.$watch(function () {
-            return $scope[controller+'$'+name];
-        }, function (newValue, oldValue) {
-            var itAttr = $.getItAttr(elem.attributes);
-            console.log(itAttr)
+            return $scope[controller + '$' + name];
+        }, function (newValue) {
+            var itArray = $.getItAttr(elem.attributes),
+                i= 0,node;
+                while(node=itArray[i++]){
+                    var filterName = $.camelize(node.nodeName),
+                        isVia = $scope.$filter[filterName] && $scope.$filter[filterName](newValue,node.value),
+                        control = controller;
+                    if(isVia){
+                        console.log(newValue)
+                    }else{
+
+                    }
+
+                }
 
             //执行过滤行为
         });
@@ -244,7 +271,7 @@
                 var newValue = watcher.watchExp(),
                     oldValue = watcher.last;
                 oldValue !== newValue && (
-                    watcher.listener(newValue, oldValue),
+                    watcher.listener(newValue),
                         dirty = true,
                         watcher.last = newValue
                     );
@@ -252,9 +279,10 @@
         } while (dirty);
     }
 
-    Scope.prototype.filter = {
-        'it-maxleng':function(value){
-            return
+    Scope.prototype.$filter = {
+        'itMaxlength': function () {
+            var args = $.toArray(arguments);
+            return args[0].length <= (+args[1]);
         }
     }
 
