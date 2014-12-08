@@ -83,12 +83,16 @@
                 chaos = $.toArray(attrs);
             while (attr = chaos[i++]) {
                 var nodeName = attr.nodeName;
-                (nodeName.charAt(2) === '-' && nodeName.slice(0, 2) === 'it') && itA.push(attr);
+                if (nodeName !== 'it-messages') {
+                    (nodeName.charAt(2) === '-' && nodeName.slice(0, 2) === 'it') && itA.push(attr);
+                } else {
+                    itA.unshift(attr);
+                }
             }
             return itA;
         },
         camelize: function (target) {
-            return target.replace(/[-][^-]/g, function(match) {
+            return target.replace(/[-][^-]/g, function (match) {
                 return match.charAt(1).toUpperCase();
             });
         }
@@ -194,19 +198,28 @@
             return $scope[controller + '$' + name];
         }, function (newValue) {
             var itArray = $.getItAttr(elem.attributes),
-                i= 0,node;
-                while(node=itArray[i++]){
-                    var filterName = $.camelize(node.nodeName),
-                        isVia = $scope.$filter[filterName] && $scope.$filter[filterName](newValue,node.value),
-                        control = controller;
-                    if(isVia){
-                        console.log(newValue)
-                    }else{
-
-                    }
-
+                itLen = itArray.length, i = 0, ii, node, mg;
+            while (node = itArray[i++]) {
+                var filterName = $.camelize(node.nodeName),
+                    mess = !!$.Observer[filterName],
+                    isVia = $scope.$filter[filterName] && $scope.$filter[filterName](newValue, node.value),
+                    control = controller;
+                if (isVia || (mess && (mg = node.value))) {
+                    void function () {
+                        ii = i
+                    }();
+                    if (itLen !== ii) continue;
+                    //是否有flawless
+                    flawless[control] = flawless[control] || {};
+                    //插入验证成功数据
+                    flawless[control][name] = newValue;
+                    //执行媒体操作
+                    $.Observer.success(mg);
+                } else {
+                    $.Observer.error(mg);
+                    break;
                 }
-
+            }
             //执行过滤行为
         });
     }
@@ -243,6 +256,28 @@
                     trigger();
                 }
             });
+        }
+    }
+
+    ////////////////
+    //   信息中心  //
+    ////////////////
+
+
+    it.prototype.Observer = {
+        itMessages: function (mess) {
+
+        },
+        success: function (mess) {
+            mess = mess.split('|')[0];
+            console.log(mess)
+        },
+        error: function (mess) {
+            mess = mess.split('|')[1];
+            console.log(mess)
+        },
+        warning: function () {
+
         }
     }
 
@@ -298,7 +333,7 @@
     }
 
     //合并基础配置
-    $.mixIn(defaults, options.base);
+    //$.mixIn(defaults, options.base);
 
     $.ready(function () {
         //初始化获得纯净form-elements

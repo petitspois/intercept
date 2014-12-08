@@ -6,9 +6,7 @@
     <link rel="stylesheet" href="../often/bootstrap.min.css"/>
     <script src="../src/intercept.js" type="text/javascript"></script>
     <script>
-        $it({
-            base: {'clearOriginal': true}
-        });
+        $it();
     </script>
 </head>
 <body>
@@ -28,10 +26,10 @@
             <div class="controls">
 
                 <!--username-->
-                <input name="username" it-maxlength="8" type="text" placeholder="Email" required>
+                <input name="username" it-maxlength="8" it-messages="输入正确!|你输入的手机号码格式有误，需为 11 位数字格式|请输入11位手机号码" type="text" placeholder="Email" required>
                 <!--end username-->
 
-                <span class="help-inline"><span class="text-error">Inline help text</span></span>
+                <span class="help-inline"><span class="text-error"></span></span>
             </div>
         </div>
 
