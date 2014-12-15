@@ -18,6 +18,8 @@
 
     var go = firefox ? 'blur' : 'focusout';
 
+    var i8 = !!('\v' == 'v');
+
     //forms集合
     var ruleArray = {};
 
@@ -60,7 +62,7 @@
             return true;
         },
         mixIn: function (target) {
-            for (var i = 0, arg, args = arguments; arg = args[i++];) {
+            for (var i = 1, arg, args = arguments; arg = args[i++];) {
                 if (arg !== target) {
                     for (var prop in arg) {
                         target[prop] = arg[prop];
@@ -70,7 +72,7 @@
             return target;
         },
         toArray: function (iterable) {
-            if ('\v' == 'v') {
+            if (i8) {
                 var len = iterable.length, arr = new Array(len);
                 while (len--)
                     arr[len] = iterable[len];
@@ -95,6 +97,18 @@
             return target.replace(/[-][^-]/g, function (match) {
                 return match.charAt(1).toUpperCase();
             });
+        },
+        siblings: function () {
+            var self = this,
+                node = self._elem[0];
+            if (node.nextElementSibling) {
+                return node.nextElementSibling;
+            }
+            while ((node = node.nextSibling) && node.nodeType !== 1);
+            return node;
+        },
+        isAll: function () {
+            return !!defaults['all'];
         }
     }
 
@@ -214,9 +228,9 @@
                     //插入验证成功数据
                     flawless[control][name] = newValue;
                     //执行媒体操作
-                    $.Observer.success(mg);
+                    $.Observer.itMessages.success(mg, elem, control);
                 } else {
-                    $.Observer.error(mg);
+                    $.Observer.itMessages.error(mg, elem, control);
                     break;
                 }
             }
@@ -231,7 +245,10 @@
             if (document.addEventListener) {
                 el.addEventListener(event, fn, false);
             } else if (document.attachEvent) {
-                el.attachEvent('on' + event, fn);
+                var ele = el;
+                ele.attachEvent('on' + event, function () {
+                    fn.call(ele, window.event);
+                });
             }
         }
     }
@@ -265,19 +282,33 @@
 
 
     it.prototype.Observer = {
-        itMessages: function (mess) {
+        itMessages: {
+            success: function (mess, el) {
+                mess = mess.split('|')[0];
+                this.trusteeship(mess, el);
+            },
+            error: function (mess, el) {
+                mess = mess.split('|')[1];
+                this.trusteeship(mess, el);
+            },
+            warning: function () {
 
-        },
-        success: function (mess) {
-            mess = mess.split('|')[0];
-            console.log(mess)
-        },
-        error: function (mess) {
-            mess = mess.split('|')[1];
-            console.log(mess)
-        },
-        warning: function () {
+            },
+            trusteeship: function (content, el) {
+                var control = el.form.getAttribute('it-controller'),
+                    option = $.isAll() ? defaults['all'] : defaults[control],
+                    node = option['messDepth'] === 'sibling' ? it(el).siblings() : false;
+                if (node) {
+                    node.innerHTML = content;
+                } else {
+                    if (option['messDepth'] === 'children') {
+                        it(el).siblings().children[0].innerHTML = content
+                    } else {
+                        throw new SyntaxError('请正确填写"messDepth"值!');
+                    }
+                }
 
+            }
         }
     }
 
@@ -309,7 +340,7 @@
                     watcher.listener(newValue),
                         dirty = true,
                         watcher.last = newValue
-                    );
+                );
             }
         } while (dirty);
     }
@@ -327,14 +358,25 @@
     //////////////
 
     var $ = new it();
+
     var $scope = new Scope();
-    var defaults = {
-        'clearOriginal': true
-    }
+
+    var originDefaults = {
+            'messDepth': 'children',
+            'tap': 'click'
+        },
+        defaults = {};
 
     //合并基础配置
-    //$.mixIn(defaults, options.base);
-
+    if(typeof options==='object' && !$.isEmptyObject(options)) {
+        for (var prop in options) {
+            defaults[prop] = $.mixIn({}, originDefaults);
+            $.mixIn(defaults[prop], options[prop]);
+        }
+    }else{
+        defaults.all = originDefaults;
+    }
+    //domReady自动运行
     $.ready(function () {
         //初始化获得纯净form-elements
         $.init();
