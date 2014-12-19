@@ -32,6 +32,10 @@
 
     var flawless = [];
 
+    //需要验证的模组
+
+    var modules = {};
+
     var it = function (selector) {
         var self = it.prototype,
             elements = [];
@@ -121,10 +125,58 @@
             while ((node = node.nextSibling) && node.nodeType !== 1);
             return node;
         },
+        ajax:function(options){
+            options = options || {};
+            options.type = (options.type || 'GET').toUpperCase();
+            options.dataType = options.dataType || 'json';
+            options.timeout = options.timeout || 5000;
+            //第一步创建
+            var xhr = new XMLHttpRequest(),json,err;
+            //第三步接受
+            xhr.onreadystatechange = function(){
+                //xhr状态
+                if(xhr.readyState === 4){
+                    //服务器返回状态
+                    var status = xhr.status,
+                        responseText = xhr.responseText;
+                    if((status>=200 && status<300) || status === 304){
+                        clearTimeout(xhrTimeout);
+                        switch (options.dataType) {
+                            case 'json':
+                                try {
+                                    json = JSON.parse(responseText);
+                                } catch (_err) {
+                                    err = _err;
+                                }
+                                options.done && options.done(json, err);
+                                break;
+                            default:
+                                options.done(responseText, null);
+                        }
+                    }else{
+                        options.fail && options.fail(status);
+                    }
+                }
+            }
+            //第二步,连接以及发送
+            if(options.type ==='GET'){
+                xhr.open('GET',options.url+'?'+options.data, true);
+                xhr.send(null);
+            }else{
+                xhr.open('POST', options.url, true);
+                xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+                xhr.send(options.data);
+            }
+            var xhrTimeout=setTimeout(ajaxTimeout,options.timeout);
+            function ajaxTimeout(){
+                xhr.abort();
+                options.fail && options.fail();
+            }
+        },
         isAll: function () {
             return !!defaults['all'];
         },
-        novalidate : function(control){
+        novalidate: function (control) {
             isRequiredSupported && (ruleArray[control]['noValidate'] = true);
         },
         /**
@@ -141,28 +193,78 @@
                 messContent = defaults[ctrl]['messContent'][elName];
             if (!!mess) {  //dom上有it-messages的情况
                 var messColl = mess.split('|');
-                    return this.returnMess(messColl, type, ctrl, elName, frNe);
+                return this.returnMess(messColl, type, ctrl, elName, frNe);
             } else {
                 //$it({}) 配置项 default=>ctrl=>'messContent'=>currentName
-                if(messContent){
+                if (messContent) {
                     return this.returnMess(messContent, type, ctrl, elName, frNe);
 
-                //启用默认
-                }else{
+                    //启用默认
+                } else {
 
                     return this.returnMess(defaults[ctrl]['defaultMess'][frNe], type);
                 }
             }
 
         },
-        returnMess:function(messColl, type, ctrl, elName, frNe){
-            if(messColl[type] === undefined){
-                if(defaults[ctrl]['messContent'][elName][type]!==undefined){
-                     return defaults[ctrl]['messContent'][elName][type];
+        returnMess: function (messColl, type, ctrl, elName, frNe) {
+            if (messColl[type] === undefined) {
+                if (defaults[ctrl]['messContent'][elName][type] !== undefined) {
+                    return defaults[ctrl]['messContent'][elName][type];
                 }
                 return defaults[ctrl]['defaultMess'][frNe][type];
-            };
+            }
+            ;
             return messColl[type];
+        },
+        scope: function (value, fn) {
+            return fn(value);
+        },
+        serialize: function (form) {
+            var parts = [],
+                i = 0,
+                j = 0,
+                field = null,
+                elems,
+                option,
+                optValue;
+            elems = form.elements;
+            while (field = elems[i++]) {
+                switch (field.type) {
+                    case 'select-one':
+                    case 'select-multiple':
+                        if (field.name.length) {
+                            while (option = field.options[j++]) {
+                                if (option.selected) {
+                                    optValue = '';
+                                    if (option.hasAttribute) {
+                                        optValue = option.hasAttribute('value') ? option.value : option.text;
+                                    } else {
+                                        optValue = options.attributes['value'].specified ? option.value : option.text;
+                                    }
+                                    parts.push(encodeURIComponent(field.name) + '=' + encodeURIComponent(optValue));
+                                }
+                            }
+                        }
+                        break;
+                    case undefined:
+                    case 'file':
+                    case 'submit':
+                    case 'reset':
+                    case 'button':
+                        break;
+                    case 'radio':
+                    case 'checkbox':
+                        if (!field.checked) {
+                            break;
+                        }
+                    default:
+                        if (field.name.length) {
+                            parts.push(encodeURIComponent(field.name) + '=' + encodeURIComponent(field.value));
+                        }
+                };
+            }
+            return parts.join('&');
         }
     }
 
@@ -232,36 +334,44 @@
         controller && void function () {
             var prop, el;
             for (prop in controller) {
-                var i = 0;
-                while (el = controller[prop]['elem'][i++]) {
+                var i = 0, local;
+                while (el = controller[prop]['elem'][local = i++]) {
+                    //需要验证的字段，绑定事件
+                    if (!$.getItAttr(el.attributes).length)break;
+                    modules[prop] = modules[prop] || [];
+                    modules[prop]['push']({
+                        'elem': el,
+                        'status': false
+                    });
+                    //绑定事件
                     switch (el.type) {
                         case 'select-one':
                         case 'select-multiple':
-                            void function (p) {
-                                $.watch(p, el.name, el);
+                            void function (p, local) {
+                                $.watch(p, el.name, el, local);
                                 it(el).on('change', function () {
                                     var me = this;
                                     $scope[p + '$' + me.name] = me.value;
                                     $scope.$digest();
                                 });
-                            }(prop);
+                            }(prop, local);
                             break;
                         default:
-                            void function (p) {
-                                $.watch(p, el.name, el);
+                            void function (p, local) {
+                                $.watch(p, el.name, el, local);
                                 it(el).on(go, function () {
                                     var me = this;
                                     $scope[p + '$' + me.name] = me.value;
                                     $scope.$digest();
                                 });
-                            }(prop);
+                            }(prop, local);
                     }
                 }
             }
         }();
     }
     /*   绑定watch  */
-    it.prototype.watch = function (controller, name, elem) {
+    it.prototype.watch = function (controller, name, elem, index) {
         $scope.$watch(function () {
             return $scope[controller + '$' + name];
         }, function (newValue) {
@@ -288,13 +398,18 @@
                         ii = i
                     }();
                     if (itLen !== ii) continue;
-                    //是否有flawless
-                    flawless[control] = flawless[control] || {};
-                    //插入验证成功数据
-                    flawless[control][name] = newValue;
+                    //改变验证状态
+                    void function (ind) {
+                        modules[control][ind]['status'] = true;
+                    }(index);
                     //执行媒体操作
                     $.Observer.itMessages.success(mg, elem, control, filterName);
                 } else {
+                    //改变验证状态
+                    void function (ind) {
+                        modules[control][ind]['status'] = false;
+                    }(index);
+                    //执行媒体操作
                     $.Observer.itMessages.error(mg, elem, control, filterName);
                     break;
                 }
@@ -304,14 +419,47 @@
     }
     //提交处理
     it.prototype.submit = function () {
-        for(var prop in controller){
+        for (var ctrl in controller) {
             //阻止高级浏览器验证
-            $.novalidate(prop);
-            it(ruleArray[prop]).on('submit',function(e){
+            $.novalidate(ctrl);
+            $.scope(ctrl, function (ctrl) {
+                it(ruleArray[ctrl]).on('submit', function (e) {
+                    var staObj, pointer =false,i = 0;
+                    while (staObj = modules[ctrl][i++]) {
+                        if (!staObj.status) {
+                            $.trigger(staObj.elem, 'focusout');
+                            pointer = true;
+                            break;
+                        }
+                    }
 
-                e.preventDefault();
+                    //拦截验证失败时
+                    pointer &&  e.preventDefault();
+
+                    //异步处理
+                    (!!defaults[ctrl]['async'] && !pointer) && void function(){
+                        //拦截同步提交
+                        e.preventDefault();
+                        var options = defaults[ctrl]['async'],
+                            form = ruleArray[ctrl];
+                        $.ajax({
+                            'url': options.url || form.action,
+                            'type': options.type,
+                            'data': $.serialize(form)
+                        });
+                    }();
+
+                });
             });
         }
+    }
+    it.prototype.trigger = function (elem, event) {
+        var evt = document.createEvent('HTMLEvents');
+        // initEvent接受3个参数：
+        // 事件类型，是否冒泡，是否阻止浏览器的默认行为
+        evt.initEvent(event, true, true);
+
+        elem.dispatchEvent(evt);
     }
 
     it.prototype.on = function (event, fn) {
@@ -462,14 +610,14 @@
             //插入信息深度
             'messDepth': 'children',
             //默认过滤信息
-            'defaultMess' :{
-                itMaxlength:{
-                    0:hook,
-                    1:'超过字符最大长度!'
+            'defaultMess': {
+                itMaxlength: {
+                    0: hook,
+                    1: '超过字符最大长度!'
                 },
-                required:{
-                    0:hook,
-                    1:'该字段不能为空!'
+                required: {
+                    0: hook,
+                    1: '该字段不能为空!'
                 }
             }
         },

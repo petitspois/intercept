@@ -17,6 +17,10 @@
                         1: '你输入的手机号码格式有误，需为 11 位数字格式',
                         2: '请输入11位手机号码'
                     }
+                },
+                async:{
+                    'url':'http://localhost:63342/intercept/tests/index.html',
+                    'type':'post'
                 }
             },
             'middle': {
@@ -61,7 +65,7 @@
             <div class="controls">
 
                 <!--短信-->
-                <input name="code" type="text" class="input-small" />
+                <input name="code" type="text" class="input-small" required />
                 <!--短信-->
 
                 <a href="#" class="btn disabled" style="margin-left:17px;">手机校验码</a>
@@ -93,7 +97,7 @@
 
                 <div class="controls">
                     <label class="radio inline">
-                        <input type="radio" name="optionsRadios" checked>
+                        <input type="radio" name="optionsRadios" value="男" checked>
                         男
                     </label>
                     <label class="radio inline">
