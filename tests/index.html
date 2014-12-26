@@ -18,6 +18,14 @@
                         2: '请输入11位手机号码'
                     }
                 },
+                //字段异步操作
+                asyncField:{
+                    'username':{
+                        url:'http://localhost:63342/intercept/tests/index.html',
+                        type:'post'
+                    }
+                },
+                //异步提交表单
                 async:{
                     'url':'http://localhost:63342/intercept/tests/index.html',
                     'type':'post'
@@ -50,8 +58,8 @@
             <div class="controls">
 
                 <!--username-->
-                <input name="username" it-maxlength="8" it-messages="输入正确!!"
-                       type="text" placeholder="Email" required>
+                <input name="username" it-async it-maxlength="8" it-messages="输入正确!!"
+                       type="text" placeholder="Email"  required>
                 <!--end username-->
 
                 <span class="help-inline"><span></span></span>
@@ -76,7 +84,7 @@
 
             <div class="controls">
                 <!--password-->
-                <input name="password" type="password" placeholder="Password">
+                <input name="password" type="password" it-password placeholder="Password">
                 <!--end password-->
             </div>
         </div>
@@ -87,7 +95,7 @@
 
             <div class="controls">
                 <!--password1-->
-                <input name="password1" type="password" placeholder="Password">
+                <input name="password1" type="password" it-password placeholder="Password">
                 <!--end password1-->
             </div>
         </div>
@@ -139,161 +147,161 @@
         </div>
     </form>
 
-    <form class="form-horizontal offset2" it-controller="middle">
+    <!--<form class="form-horizontal offset2" it-controller="middle">-->
 
-    <div class="control-group">
-    <label class="control-label">Email/手机号码</label>
+    <!--<div class="control-group">-->
+    <!--<label class="control-label">Email/手机号码</label>-->
 
-    <div class="controls">
+    <!--<div class="controls">-->
 
-    <!--username-->
-    <input name="username" type="text" placeholder="Email" required>
-    <!--end username-->
+    <!--&lt;!&ndash;username&ndash;&gt;-->
+    <!--<input name="username" type="text" placeholder="Email" required>-->
+    <!--&lt;!&ndash;end username&ndash;&gt;-->
 
-    <span class="help-inline"><span class="text-error">Inline help text</span></span>
-    </div>
-    </div>
+    <!--<span class="help-inline"><span class="text-error">Inline help text</span></span>-->
+    <!--</div>-->
+    <!--</div>-->
 
-    <div class="control-group">
-    <label class="control-label">短信校验码</label>
+    <!--<div class="control-group">-->
+    <!--<label class="control-label">短信校验码</label>-->
 
-    <div class="controls">
+    <!--<div class="controls">-->
 
-    <!--短信-->
-    <input name="code" type="text" class="input-small"/>
-    <!--短信-->
+    <!--&lt;!&ndash;短信&ndash;&gt;-->
+    <!--<input name="code" type="text" class="input-small"/>-->
+    <!--&lt;!&ndash;短信&ndash;&gt;-->
 
-    <a href="#" class="btn disabled" style="margin-left:17px;">手机校验码</a>
-    </div>
-    </div>
-    <div class="control-group">
-    <label class="control-label">密码</label>
-
-    <div class="controls">
-    <!--password-->
-    <input name="password" type="password" placeholder="Password">
-    <!--end password-->
-    </div>
-    </div>
-
-
-    <div class="control-group">
-    <label class="control-label">重复密码</label>
-
-    <div class="controls">
-    <!--password1-->
-    <input name="password1" type="password" placeholder="Password">
-    <!--end password1-->
-    </div>
-    </div>
-    <fieldset>
-    <div class="control-group offset2">
-    <label class="radio inline">
-    <input type="radio" name="optionsRadios" checked>
-    男
-    </label>
-    <label class="radio inline">
-    <input type="radio" name="optionsRadios" >
-    女
-    </label>
-    </div>
-    </fieldset>
-    <div class="control-group">
-    <label class="control-label">验证码</label>
-
-    <div class="controls">
-    <input name="verification" type="text" class="input-small"/>
     <!--<a href="#" class="btn disabled" style="margin-left:17px;">手机校验码</a>-->
-    </div>
-    </div>
-    <div class="control-group">
-    <div class="controls">
-    <label class="checkbox">
-    <input name="protocol" type="checkbox">
-    <small>我已经认真阅读并同意豆瓣的《<a href="#">使用协议</a>》。</small>
-    </label>
-    <button type="submit" class="btn btn-primary">立即注册</button>
-    </div>
-    </div>
-    </form>
+    <!--</div>-->
+    <!--</div>-->
+    <!--<div class="control-group">-->
+    <!--<label class="control-label">密码</label>-->
 
-    <form class="form-horizontal offset2" it-controller="bottom">
-
-    <div class="control-group">
-    <label class="control-label">Email/手机号码</label>
-
-    <div class="controls">
-
-    <!--username-->
-    <input name="username" type="text" placeholder="Email" required>
-    <!--end username-->
-
-    <span class="help-inline"><span class="text-error">Inline help text</span></span>
-    </div>
-    </div>
-
-    <div class="control-group">
-    <label class="control-label">短信校验码</label>
-
-    <div class="controls">
-
-    <!--短信-->
-    <input name="code" type="text" class="input-small"/>
-    <!--短信-->
-
-    <a href="#" class="btn disabled" style="margin-left:17px;">手机校验码</a>
-    </div>
-    </div>
-    <div class="control-group">
-    <label class="control-label">密码</label>
-
-    <div class="controls">
-    <!--password-->
-    <input name="password" type="password" placeholder="Password">
-    <!--end password-->
-    </div>
-    </div>
+    <!--<div class="controls">-->
+    <!--&lt;!&ndash;password&ndash;&gt;-->
+    <!--<input name="password" type="password" placeholder="Password">-->
+    <!--&lt;!&ndash;end password&ndash;&gt;-->
+    <!--</div>-->
+    <!--</div>-->
 
 
-    <div class="control-group">
-    <label class="control-label">重复密码</label>
+    <!--<div class="control-group">-->
+    <!--<label class="control-label">重复密码</label>-->
 
-    <div class="controls">
-    <!--password1-->
-    <input name="password1" type="password" placeholder="Password">
-    <!--end password1-->
-    </div>
-    </div>
-    <fieldset>
-    <div class="control-group offset2">
-    <label class="radio inline">
-    <input type="radio" name="optionsRadios" checked>
-    男
-    </label>
-    <label class="radio inline">
-    <input type="radio" name="optionsRadios" >
-    女
-    </label>
-    </div>
-    </fieldset>
-    <div class="control-group">
-    <label class="control-label">验证码</label>
+    <!--<div class="controls">-->
+    <!--&lt;!&ndash;password1&ndash;&gt;-->
+    <!--<input name="password1" type="password" placeholder="Password">-->
+    <!--&lt;!&ndash;end password1&ndash;&gt;-->
+    <!--</div>-->
+    <!--</div>-->
+    <!--<fieldset>-->
+    <!--<div class="control-group offset2">-->
+    <!--<label class="radio inline">-->
+    <!--<input type="radio" name="optionsRadios" checked>-->
+    <!--男-->
+    <!--</label>-->
+    <!--<label class="radio inline">-->
+    <!--<input type="radio" name="optionsRadios" >-->
+    <!--女-->
+    <!--</label>-->
+    <!--</div>-->
+    <!--</fieldset>-->
+    <!--<div class="control-group">-->
+    <!--<label class="control-label">验证码</label>-->
 
-    <div class="controls">
-    <input name="verification" type="text" class="input-small"/>
+    <!--<div class="controls">-->
+    <!--<input name="verification" type="text" class="input-small"/>-->
+    <!--&lt;!&ndash;<a href="#" class="btn disabled" style="margin-left:17px;">手机校验码</a>&ndash;&gt;-->
+    <!--</div>-->
+    <!--</div>-->
+    <!--<div class="control-group">-->
+    <!--<div class="controls">-->
+    <!--<label class="checkbox">-->
+    <!--<input name="protocol" type="checkbox">-->
+    <!--<small>我已经认真阅读并同意豆瓣的《<a href="#">使用协议</a>》。</small>-->
+    <!--</label>-->
+    <!--<button type="submit" class="btn btn-primary">立即注册</button>-->
+    <!--</div>-->
+    <!--</div>-->
+    <!--</form>-->
+
+    <!--<form class="form-horizontal offset2" it-controller="bottom">-->
+
+    <!--<div class="control-group">-->
+    <!--<label class="control-label">Email/手机号码</label>-->
+
+    <!--<div class="controls">-->
+
+    <!--&lt;!&ndash;username&ndash;&gt;-->
+    <!--<input name="username" type="text" placeholder="Email" required>-->
+    <!--&lt;!&ndash;end username&ndash;&gt;-->
+
+    <!--<span class="help-inline"><span class="text-error">Inline help text</span></span>-->
+    <!--</div>-->
+    <!--</div>-->
+
+    <!--<div class="control-group">-->
+    <!--<label class="control-label">短信校验码</label>-->
+
+    <!--<div class="controls">-->
+
+    <!--&lt;!&ndash;短信&ndash;&gt;-->
+    <!--<input name="code" type="text" class="input-small"/>-->
+    <!--&lt;!&ndash;短信&ndash;&gt;-->
+
     <!--<a href="#" class="btn disabled" style="margin-left:17px;">手机校验码</a>-->
-    </div>
-    </div>
-    <div class="control-group">
-    <div class="controls">
-    <label class="checkbox">
-    <input name="protocol" type="checkbox">
-    <small>我已经认真阅读并同意豆瓣的《<a href="#">使用协议</a>》。</small>
-    </label>
-    <button type="submit" class="btn btn-primary">立即注册</button>
-    </div>
-    </div>
-    </form>
+    <!--</div>-->
+    <!--</div>-->
+    <!--<div class="control-group">-->
+    <!--<label class="control-label">密码</label>-->
+
+    <!--<div class="controls">-->
+    <!--&lt;!&ndash;password&ndash;&gt;-->
+    <!--<input name="password" type="password" placeholder="Password">-->
+    <!--&lt;!&ndash;end password&ndash;&gt;-->
+    <!--</div>-->
+    <!--</div>-->
+
+
+    <!--<div class="control-group">-->
+    <!--<label class="control-label">重复密码</label>-->
+
+    <!--<div class="controls">-->
+    <!--&lt;!&ndash;password1&ndash;&gt;-->
+    <!--<input name="password1" type="password" placeholder="Password">-->
+    <!--&lt;!&ndash;end password1&ndash;&gt;-->
+    <!--</div>-->
+    <!--</div>-->
+    <!--<fieldset>-->
+    <!--<div class="control-group offset2">-->
+    <!--<label class="radio inline">-->
+    <!--<input type="radio" name="optionsRadios" checked>-->
+    <!--男-->
+    <!--</label>-->
+    <!--<label class="radio inline">-->
+    <!--<input type="radio" name="optionsRadios" >-->
+    <!--女-->
+    <!--</label>-->
+    <!--</div>-->
+    <!--</fieldset>-->
+    <!--<div class="control-group">-->
+    <!--<label class="control-label">验证码</label>-->
+
+    <!--<div class="controls">-->
+    <!--<input name="verification" type="text" class="input-small"/>-->
+    <!--&lt;!&ndash;<a href="#" class="btn disabled" style="margin-left:17px;">手机校验码</a>&ndash;&gt;-->
+    <!--</div>-->
+    <!--</div>-->
+    <!--<div class="control-group">-->
+    <!--<div class="controls">-->
+    <!--<label class="checkbox">-->
+    <!--<input name="protocol" type="checkbox">-->
+    <!--<small>我已经认真阅读并同意豆瓣的《<a href="#">使用协议</a>》。</small>-->
+    <!--</label>-->
+    <!--<button type="submit" class="btn btn-primary">立即注册</button>-->
+    <!--</div>-->
+    <!--</div>-->
+    <!--</form>-->
 </div>
 </body>
 </html>

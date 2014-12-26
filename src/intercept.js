@@ -12,6 +12,9 @@
 
     "use strict";
 
+
+    var Pme = null;
+
     var op = Object.prototype;
 
     var firefox = !!window.netscape;
@@ -88,12 +91,16 @@
             }
             return [].slice.call(iterable);
         },
+        hasOwn: function (obj, prop) {
+            return op.hasOwnProperty.call(obj, prop);
+        },
         getItAttr: function (attrs) {
             var itA = [],
                 i = 0,
                 attr,
                 nodeName,
                 must = false,
+                async = false,
                 chaos = $.toArray(attrs);
             while (attr = chaos[i++]) {
                 nodeName = attr.nodeName;
@@ -104,11 +111,17 @@
                     case 'required':
                         must = true;
                         break;
+                    case 'it-async':
+                        async = true;
+                        break;
                     default :
                         (nodeName.charAt(2) === '-' && nodeName.slice(0, 2) === 'it') && itA.push(attr);
                 }
             }
+            //required为第二处理
             must && (itA.splice(1, 0, 'required'));
+            //异步最后处理
+            async && (itA.push('it-async'));
             return itA;
         },
         camelize: function (target) {
@@ -125,21 +138,21 @@
             while ((node = node.nextSibling) && node.nodeType !== 1);
             return node;
         },
-        ajax:function(options){
+        ajax: function (options) {
             options = options || {};
             options.type = (options.type || 'GET').toUpperCase();
             options.dataType = options.dataType || 'json';
-            options.timeout = options.timeout || 5000;
+            options.timeout = options.timeout || 15000;
             //第一步创建
-            var xhr = new XMLHttpRequest(),json,err;
+            var xhr = new XMLHttpRequest(), json, err;
             //第三步接受
-            xhr.onreadystatechange = function(){
+            xhr.onreadystatechange = function () {
                 //xhr状态
-                if(xhr.readyState === 4){
+                if (xhr.readyState === 4) {
                     //服务器返回状态
                     var status = xhr.status,
                         responseText = xhr.responseText;
-                    if((status>=200 && status<300) || status === 304){
+                    if ((status >= 200 && status < 300) || status === 304) {
                         clearTimeout(xhrTimeout);
                         switch (options.dataType) {
                             case 'json':
@@ -153,31 +166,41 @@
                             default:
                                 options.done(responseText, null);
                         }
-                    }else{
+                    } else {
                         options.fail && options.fail(status);
                     }
                 }
             }
             //第二步,连接以及发送
-            if(options.type ==='GET'){
-                xhr.open('GET',options.url+'?'+options.data, true);
+            if (options.type === 'GET') {
+                xhr.open('GET', options.url + '?' + options.data, true);
                 xhr.send(null);
-            }else{
+            } else {
                 xhr.open('POST', options.url, true);
-                xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 xhr.send(options.data);
             }
-            var xhrTimeout=setTimeout(ajaxTimeout,options.timeout);
-            function ajaxTimeout(){
+            var xhrTimeout = setTimeout(ajaxTimeout, options.timeout);
+
+            function ajaxTimeout() {
                 xhr.abort();
                 options.fail && options.fail();
             }
+        },
+        warn: function (msg) {
+            console.warn('[it warn]: ' + msg);
         },
         isAll: function () {
             return !!defaults['all'];
         },
         novalidate: function (control) {
             isRequiredSupported && (ruleArray[control]['noValidate'] = true);
+        },
+        getEvent:function(event){
+          return event ? event : window.event;
+        },
+        preventDefault:function(event){
+            event.preventDefault ? event.preventDefault(): event.returnValue = false;
         },
         /**
          *
@@ -216,9 +239,6 @@
             }
             ;
             return messColl[type];
-        },
-        scope: function (value, fn) {
-            return fn(value);
         },
         serialize: function (form) {
             var parts = [],
@@ -262,11 +282,72 @@
                         if (field.name.length) {
                             parts.push(encodeURIComponent(field.name) + '=' + encodeURIComponent(field.value));
                         }
-                };
+                }
+                ;
             }
             return parts.join('&');
         }
     }
+
+    /////////////////
+    // es6 Promise //
+    /////////////////
+
+    var isPromise = false;
+
+    try{
+        Pme = Promise;
+    }catch(e){
+        isPromise = true;
+    }
+
+    isPromise && typeof function(){
+        var Promise = function (fn) {
+            var that = this,
+                resolve = function (val) {
+                    that.resolve(val);
+                },
+                reject = function (val) {
+                    that.reject(val);
+                };
+            that.status = 'pending';
+            that.resolveFn = null;
+            that.rejectFn = null;
+            typeof fn === 'function' && fn(resolve, reject);
+        }
+        Promise.prototype.resolve = function (val) {
+            if(this.status === 'pending'){
+                this.status = 'fulfilled';
+                alert(this.resolveFn)
+                this.resolveFn && this.resolveFn(val);
+            }
+        }
+        Promise.prototype.reject = function (val) {
+            if(this.status === 'pending'){
+                this.status = 'rejected';
+                this.rejectFn && this.rejectFn(val);
+            }
+        }
+        Promise.prototype.then = function(resolve, reject){
+            var borrow = new Promise();
+            this.resolveFn = function(val){
+                var result = resolve ? resolve(val) : val;
+                if(Promise.isP(result)){
+                    result.then(function(val){
+                        borrow.resolve(val);
+                    });
+                }else{
+                    borrow.resolve(result);
+                }
+            }
+            this.rejectFn = function(val){
+                var result = reject ? reject(val) : val;
+                borrow.reject(result);
+            }
+            return borrow;
+        }
+        Pme = Promise;
+    }();
 
     ////////////////////
     // 为it添加基础方法 //
@@ -293,20 +374,23 @@
     //获取纯洁处理对象
     it.prototype.getNeatField = function () {
         if (!$.isEmptyObject(ruleArray)) {
+            var frChild;
             ruleArray = ruleArray.nodeName ? {'it': ruleArray} : ruleArray;
             for (var prop in ruleArray) {
-                var frChild = ruleArray[prop].elements;
-                controller[prop] = {};
-                controller[prop]['status'] = false;
-                controller[prop]['elem'] = [];
-                for (var i = 0, el; el = frChild[i++];) {
-                    if ($.filterType(el)) {
-                        controller[prop]['elem'].push(el);
+                if ($.hasOwn(ruleArray, prop)) {
+                    frChild = ruleArray[prop].elements;
+                    controller[prop] = {};
+                    controller[prop]['status'] = false;
+                    controller[prop]['elem'] = [];
+                    for (var i = 0, el; el = frChild[i++];) {
+                        if ($.filterType(el)) {
+                            controller[prop]['elem'].push(el);
+                        }
                     }
                 }
             }
         } else {
-            throw new SyntaxError('请确认表单form标签已有"it-controller"属性!');
+            $.warn('请确认表单form标签已有"it-controller"属性!');
         }
     }
 
@@ -335,36 +419,38 @@
             var prop, el;
             for (prop in controller) {
                 var i = 0, local;
-                while (el = controller[prop]['elem'][local = i++]) {
-                    //需要验证的字段，绑定事件
-                    if (!$.getItAttr(el.attributes).length)break;
-                    modules[prop] = modules[prop] || [];
-                    modules[prop]['push']({
-                        'elem': el,
-                        'status': false
-                    });
-                    //绑定事件
-                    switch (el.type) {
-                        case 'select-one':
-                        case 'select-multiple':
-                            void function (p, local) {
-                                $.watch(p, el.name, el, local);
-                                it(el).on('change', function () {
-                                    var me = this;
-                                    $scope[p + '$' + me.name] = me.value;
-                                    $scope.$digest();
-                                });
-                            }(prop, local);
-                            break;
-                        default:
-                            void function (p, local) {
-                                $.watch(p, el.name, el, local);
-                                it(el).on(go, function () {
-                                    var me = this;
-                                    $scope[p + '$' + me.name] = me.value;
-                                    $scope.$digest();
-                                });
-                            }(prop, local);
+                if ($.hasOwn(controller, prop)) {
+                    while (el = controller[prop]['elem'][local = i++]) {
+                        //需要验证的字段，绑定事件
+                        if (!$.getItAttr(el.attributes).length)break;
+                        modules[prop] = modules[prop] || [];
+                        modules[prop]['push']({
+                            'elem': el,
+                            'status': false
+                        });
+                        //绑定事件
+                        switch (el.type) {
+                            case 'select-one':
+                            case 'select-multiple':
+                                void function (p, local) {
+                                    $.watch(p, el.name, el, local);
+                                    it(el).on('change', function () {
+                                        var me = this;
+                                        $scope[p + '$' + me.name] = me.value;
+                                        $scope.$digest();
+                                    });
+                                }(prop, local);
+                                break;
+                            default:
+                                void function (p, local) {
+                                    $.watch(p, el.name, el, local);
+                                    it(el).on(go, function () {
+                                        var me = this;
+                                        $scope[p + '$' + me.name] = me.value;
+                                        $scope.$digest();
+                                    });
+                                }(prop, local);
+                        }
                     }
                 }
             }
@@ -389,24 +475,33 @@
                     isVia,
                     control = controller;
                 //集合第一条不为it-messages
-                !mess && (isVia = $scope.$filter[filterName] && $scope.$filter[filterName](newValue, (node.value || node)));
+                //$scope.$filter.filtername args(原始值，当前字段属性值，控制器范围)
+                !mess && (isVia = $scope.$filter[filterName] && $scope.$filter[filterName](newValue, (node.value || node), control, name));
+                console.log(isVia,filterName,node)
                 //集合第一条为it-messages,对mg进行赋值
                 mess && (mg = node.value);
                 //验证返回值或信息为true时
                 if (isVia || mess) {
-                    void function () {
-                        ii = i
-                    }();
+                    typeof function () { ii = i}();
                     if (itLen !== ii) continue;
                     //改变验证状态
-                    void function (ind) {
+                    typeof function (ind) {
                         modules[control][ind]['status'] = true;
                     }(index);
                     //执行媒体操作
                     $.Observer.itMessages.success(mg, elem, control, filterName);
                 } else {
+                    //非it内部属性处理
+                    if (isVia === undefined) {
+                        //无属性时，设置状态为true
+                        typeof function(ind){
+                            modules[control][ind]['status'] = true;
+                        }(index);
+                        $.warn('存在非intercept内部属性!');
+                        continue;
+                    };
                     //改变验证状态
-                    void function (ind) {
+                    typeof function (ind) {
                         modules[control][ind]['status'] = false;
                     }(index);
                     //执行媒体操作
@@ -421,10 +516,11 @@
     it.prototype.submit = function () {
         for (var ctrl in controller) {
             //阻止高级浏览器验证
+            if($.hasOwn(controller, ctrl)){
             $.novalidate(ctrl);
-            $.scope(ctrl, function (ctrl) {
+            typeof function (ctrl) {
                 it(ruleArray[ctrl]).on('submit', function (e) {
-                    var staObj, pointer =false,i = 0;
+                    var staObj, pointer = false, i = 0,e = $.getEvent(e);
                     while (staObj = modules[ctrl][i++]) {
                         if (!staObj.status) {
                             $.trigger(staObj.elem, 'focusout');
@@ -432,25 +528,25 @@
                             break;
                         }
                     }
-
                     //拦截验证失败时
-                    pointer &&  e.preventDefault();
+                    pointer && $.preventDefault(e);
 
+                    var options = defaults[ctrl]['async'];
                     //异步处理
-                    (!!defaults[ctrl]['async'] && !pointer) && void function(){
+                    (!!options && !pointer) && void function () {
                         //拦截同步提交
-                        e.preventDefault();
-                        var options = defaults[ctrl]['async'],
-                            form = ruleArray[ctrl];
-                        $.ajax({
-                            'url': options.url || form.action,
-                            'type': options.type,
-                            'data': $.serialize(form)
-                        });
+                        $.preventDefault(e);
+                        var form = ruleArray[ctrl];
+                        options.data = $.serialize(form);
+                        options.done = function(){
+                            options.success();
+                        }
+                        $.ajax(options);
                     }();
 
                 });
-            });
+            }(ctrl);
+        }
         }
     }
     it.prototype.trigger = function (elem, event) {
@@ -530,7 +626,7 @@
                 var control = el.form.getAttribute('it-controller'),
                     option = $.isAll() ? defaults['all'] : defaults[control], node,
                     sibling = it(el).siblings();
-                if (sibling === null) throw new SyntaxError('请添加相邻元素!');
+                if (sibling === null) $.warn('请添加相邻元素!');
                 node = option['messDepth'] === 'sibling' ? sibling : false;
                 if (node) {
                     type ? node.className = 'text-success' : node.className = 'text-error';
@@ -542,10 +638,10 @@
                             type ? child.className = 'text-success' : child.className = 'text-error';
                             child.innerHTML = content;
                         } else {
-                            throw new SyntaxError('请在信息中添加子元素!');
+                            $.warn('请在信息中添加子元素!');
                         }
                     } else {
-                        throw new SyntaxError('请正确填写"messDepth"值!');
+                        $.warn('请正确填写"messDepth"值!');
                     }
                 }
 
@@ -587,14 +683,52 @@
     }
 
     Scope.prototype.$filter = {
-        //arguments (value,rule)
+
+        'required': function (value) {
+            return $.trim(value) !== '';
+        },
         'itMaxlength': function () {
             var args = $.toArray(arguments);
             return args[0].length <= (+args[1]);
         },
-        'required': function (value) {
-            return $.trim(value) !== '';
+        'itAsync':function(){
+            var options,
+                args = $.toArray(arguments),
+                value = $.trim(args[0]),
+                name = args[3],
+                control = args[2];
+                options = defaults[control]['asyncField'][name] || {};
+                if(typeof options=='object' && !$.isEmptyObject(options)){
+                    //添加data数据
+                    options.data = name+'='+value;
+                    //请求失败
+                    options.fail = function(){
+                        return false;
+                    }
+                    //请求成功
+                    options.done = function(result, error){
+                        //defaults对象中，是否有success方法
+                        if(options.success && typeof options.success=='function'){
+                            //defaults->success返回结果处理
+                            var doneStatus = options.success(result, error);
+                            if(typeof doneStatus == 'boolean'){
+                                return doneStatus;
+                            }else{
+                                $.warn('success返回类型应为"boolean"!');
+                                return false;
+                            }
+                        }else{
+                            $.warn('没有"success"或类型不为"function"!');
+                            return false;
+                        }
+                    }
+                    $.ajax(options);
+                }else{
+                    $.warn('请输入正确的"asyncField"字段!');
+                    return false;
+                }
         }
+
     }
 
 
@@ -626,8 +760,10 @@
     //合并基础配置
     if (typeof options === 'object' && !$.isEmptyObject(options)) {
         for (var prop in options) {
-            defaults[prop] = $.mixIn({}, originDefaults);
-            $.mixIn(defaults[prop], options[prop]);
+            if($.hasOwn(options, prop)) {
+                defaults[prop] = $.mixIn({}, originDefaults);
+                $.mixIn(defaults[prop], options[prop]);
+            }
         }
     } else {
         defaults.all = originDefaults;
