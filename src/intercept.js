@@ -94,6 +94,9 @@
         hasOwn: function (obj, prop) {
             return op.hasOwnProperty.call(obj, prop);
         },
+        indexOf: function (searchobj, searchvalue) {
+            return String.prototype.indexOf.call(searchobj, searchvalue);
+        },
         getItAttr: function (attrs) {
             var itA = [],
                 i = 0,
@@ -143,49 +146,53 @@
             options.type = (options.type || 'GET').toUpperCase();
             options.dataType = options.dataType || 'json';
             options.timeout = options.timeout || 15000;
-            //第一步创建
-            var xhr = new XMLHttpRequest(), json, err;
-            //第三步接受
-            xhr.onreadystatechange = function () {
-                //xhr状态
-                if (xhr.readyState === 4) {
-                    //服务器返回状态
-                    var status = xhr.status,
-                        responseText = xhr.responseText;
-                    if ((status >= 200 && status < 300) || status === 304) {
-                        clearTimeout(xhrTimeout);
-                        switch (options.dataType) {
-                            case 'json':
-                                try {
-                                    json = JSON.parse(responseText);
-                                } catch (_err) {
-                                    err = _err;
-                                }
-                                options.done && options.done(json, err);
-                                break;
-                            default:
-                                options.done(responseText, null);
+            var promise = new Pme(function (resolve, reject) {
+                //第一步创建
+                var xhr = new XMLHttpRequest(), json, err;
+                //第三步接受
+                xhr.onreadystatechange = function () {
+                    //xhr状态
+                    if (xhr.readyState === 4) {
+                        //服务器返回状态
+                        var status = xhr.status,
+                            responseText = xhr.responseText;
+                        if ((status >= 200 && status < 300) || status === 304) {
+                            clearTimeout(xhrTimeout);
+                            switch (options.dataType) {
+                                case 'json':
+                                    try {
+                                        json = JSON.parse(responseText);
+                                    } catch (_err) {
+                                        err = _err;
+                                    }
+                                    resolve(json, err);
+                                    break;
+                                default:
+                                    resolve(responseText, null);
+                            }
+                        } else {
+                            reject(status);
                         }
-                    } else {
-                        options.fail && options.fail(status);
                     }
                 }
-            }
-            //第二步,连接以及发送
-            if (options.type === 'GET') {
-                xhr.open('GET', options.url + '?' + options.data, true);
-                xhr.send(null);
-            } else {
-                xhr.open('POST', options.url, true);
-                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                xhr.send(options.data);
-            }
-            var xhrTimeout = setTimeout(ajaxTimeout, options.timeout);
+                //第二步,连接以及发送
+                if (options.type === 'GET') {
+                    xhr.open('GET', options.url + '?' + options.data, true);
+                    xhr.send(null);
+                } else {
+                    xhr.open('POST', options.url, true);
+                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                    xhr.send(options.data);
+                }
+                var xhrTimeout = setTimeout(ajaxTimeout, options.timeout);
 
-            function ajaxTimeout() {
-                xhr.abort();
-                options.fail && options.fail();
-            }
+                function ajaxTimeout() {
+                    xhr.abort();
+                    reject();
+                }
+            });
+
+            return promise;
         },
         warn: function (msg) {
             console.warn('[it warn]: ' + msg);
@@ -196,11 +203,11 @@
         novalidate: function (control) {
             isRequiredSupported && (ruleArray[control]['noValidate'] = true);
         },
-        getEvent:function(event){
-          return event ? event : window.event;
+        getEvent: function (event) {
+            return event ? event : window.event;
         },
-        preventDefault:function(event){
-            event.preventDefault ? event.preventDefault(): event.returnValue = false;
+        preventDefault: function (event) {
+            event.preventDefault ? event.preventDefault() : event.returnValue = false;
         },
         /**
          *
@@ -295,13 +302,13 @@
 
     var isPromise = false;
 
-    try{
+    try {
         Pme = Promise;
-    }catch(e){
+    } catch (e) {
         isPromise = true;
     }
 
-    isPromise && typeof function(){
+    isPromise && typeof function () {
         var Promise = function (fn) {
             var that = this,
                 resolve = function (val) {
@@ -316,31 +323,31 @@
             typeof fn === 'function' && fn(resolve, reject);
         }
         Promise.prototype.resolve = function (val) {
-            if(this.status === 'pending'){
+            if (this.status === 'pending') {
                 this.status = 'fulfilled';
                 alert(this.resolveFn)
                 this.resolveFn && this.resolveFn(val);
             }
         }
         Promise.prototype.reject = function (val) {
-            if(this.status === 'pending'){
+            if (this.status === 'pending') {
                 this.status = 'rejected';
                 this.rejectFn && this.rejectFn(val);
             }
         }
-        Promise.prototype.then = function(resolve, reject){
+        Promise.prototype.then = function (resolve, reject) {
             var borrow = new Promise();
-            this.resolveFn = function(val){
+            this.resolveFn = function (val) {
                 var result = resolve ? resolve(val) : val;
-                if(Promise.isP(result)){
-                    result.then(function(val){
+                if (Promise.isP(result)) {
+                    result.then(function (val) {
                         borrow.resolve(val);
                     });
-                }else{
+                } else {
                     borrow.resolve(result);
                 }
             }
-            this.rejectFn = function(val){
+            this.rejectFn = function (val) {
                 var result = reject ? reject(val) : val;
                 borrow.reject(result);
             }
@@ -461,45 +468,69 @@
         $scope.$watch(function () {
             return $scope[controller + '$' + name];
         }, function (newValue) {
-            var itArray = $.getItAttr(elem.attributes),
-                itLen = itArray.length, i = 0, ii, node, mg;
+            var ii,
+                mg,
+                node,
+                isVia,
+                itasync,
+                isAsync,
+                isSuccess,
+                statusAndMess,
+                i = 0,
+                control = controller,
+                itArray = $.getItAttr(elem.attributes),
+                itLen = itArray.length;
+
+            isAsync = !($.indexOf(itArray, 'it-async') === -1) && !!itArray.pop();
+            isAsync && (itLen--);
             while (node = itArray[i++]) {
-                /**
-                 *  @var 'filtername' {intercept 属性集合}
-                 *       'mess' {dom中是否有it-messages属性}
-                 *       'isVia' {filter验证是否通过}
-                 *       'control' {控制范围}
-                 */
                 var filterName = $.camelize(node.nodeName || node),
-                    mess = !!$.Observer[filterName],
-                    isVia,
-                    control = controller;
+                    mess = !!$.Observer[filterName];
                 //集合第一条不为it-messages
                 //$scope.$filter.filtername args(原始值，当前字段属性值，控制器范围)
                 !mess && (isVia = $scope.$filter[filterName] && $scope.$filter[filterName](newValue, (node.value || node), control, name));
-                console.log(isVia,filterName,node)
                 //集合第一条为it-messages,对mg进行赋值
                 mess && (mg = node.value);
                 //验证返回值或信息为true时
                 if (isVia || mess) {
-                    typeof function () { ii = i}();
+                    typeof function () {
+                        ii = i
+                    }();
                     if (itLen !== ii) continue;
-                    //改变验证状态
-                    typeof function (ind) {
-                        modules[control][ind]['status'] = true;
-                    }(index);
-                    //执行媒体操作
-                    $.Observer.itMessages.success(mg, elem, control, filterName);
+                    statusAndMess = function (status) {
+                        //改变验证状态
+                        typeof function (ind) {
+                            modules[control][ind]['status'] = status!==undefined ? status : true;
+                        }(index);
+                        //执行媒体操作
+                        status?
+                            $.Observer.itMessages.success(mg, elem, control, filterName):
+                            $.Observer.itMessages.error(mg, elem, control, filterName);
+                    }
+
+                    //如果存在异步字段
+                    if (isAsync) {
+                        itasync = $scope.$filter.itAsync(newValue, (node.value || node), control, name);
+                        itasync.then(function () {
+                            statusAndMess(true);
+                        }, function () {
+                            statusAndMess(false);
+                        });
+                    } else {
+                        statusAndMess();
+                    }
+
                 } else {
                     //非it内部属性处理
                     if (isVia === undefined) {
                         //无属性时，设置状态为true
-                        typeof function(ind){
+                        typeof function (ind) {
                             modules[control][ind]['status'] = true;
                         }(index);
                         $.warn('存在非intercept内部属性!');
                         continue;
-                    };
+                    }
+                    ;
                     //改变验证状态
                     typeof function (ind) {
                         modules[control][ind]['status'] = false;
@@ -516,37 +547,37 @@
     it.prototype.submit = function () {
         for (var ctrl in controller) {
             //阻止高级浏览器验证
-            if($.hasOwn(controller, ctrl)){
-            $.novalidate(ctrl);
-            typeof function (ctrl) {
-                it(ruleArray[ctrl]).on('submit', function (e) {
-                    var staObj, pointer = false, i = 0,e = $.getEvent(e);
-                    while (staObj = modules[ctrl][i++]) {
-                        if (!staObj.status) {
-                            $.trigger(staObj.elem, 'focusout');
-                            pointer = true;
-                            break;
+            if ($.hasOwn(controller, ctrl)) {
+                $.novalidate(ctrl);
+                typeof function (ctrl) {
+                    it(ruleArray[ctrl]).on('submit', function (e) {
+                        var staObj, pointer = false, i = 0, e = $.getEvent(e);
+                        while (staObj = modules[ctrl][i++]) {
+                            if (!staObj.status) {
+                                $.trigger(staObj.elem, 'focusout');
+                                pointer = true;
+                                break;
+                            }
                         }
-                    }
-                    //拦截验证失败时
-                    pointer && $.preventDefault(e);
+                        console.log(modules[ctrl])
+                        //拦截验证失败时
+                        pointer && $.preventDefault(e);
 
-                    var options = defaults[ctrl]['async'];
-                    //异步处理
-                    (!!options && !pointer) && void function () {
-                        //拦截同步提交
-                        $.preventDefault(e);
-                        var form = ruleArray[ctrl];
-                        options.data = $.serialize(form);
-                        options.done = function(){
-                            options.success();
-                        }
-                        $.ajax(options);
-                    }();
+                        var options = defaults[ctrl]['async'];
+                        //异步处理
+                        (!!options && !pointer) && void function () {
+                            //拦截同步提交
+                            $.preventDefault(e);
+                            var form = ruleArray[ctrl];
+                            options.data = $.serialize(form);
+                            $.ajax(options).then(function(){
+                                options.success();
+                            });
+                        }();
 
-                });
-            }(ctrl);
-        }
+                    });
+                }(ctrl);
+            }
         }
     }
     it.prototype.trigger = function (elem, event) {
@@ -691,42 +722,44 @@
             var args = $.toArray(arguments);
             return args[0].length <= (+args[1]);
         },
-        'itAsync':function(){
+        'itAsync': function () {
             var options,
+                itPromise,
                 args = $.toArray(arguments),
                 value = $.trim(args[0]),
                 name = args[3],
                 control = args[2];
-                options = defaults[control]['asyncField'][name] || {};
-                if(typeof options=='object' && !$.isEmptyObject(options)){
+            options = defaults[control]['asyncField'][name] || {};
+            itPromise = new Promise(function (resolve, reject) {
+                if (typeof options == 'object' && !$.isEmptyObject(options)) {
                     //添加data数据
-                    options.data = name+'='+value;
-                    //请求失败
-                    options.fail = function(){
-                        return false;
-                    }
-                    //请求成功
-                    options.done = function(result, error){
+                    options.data = name + '=' + value;
+                    $.ajax(options).then(function(result, error){
                         //defaults对象中，是否有success方法
-                        if(options.success && typeof options.success=='function'){
+                        if (options.success && typeof options.success == 'function') {
                             //defaults->success返回结果处理
                             var doneStatus = options.success(result, error);
-                            if(typeof doneStatus == 'boolean'){
-                                return doneStatus;
-                            }else{
+                            if (typeof doneStatus == 'boolean') {
+                                doneStatus ? resolve() : reject();
+                            } else {
                                 $.warn('success返回类型应为"boolean"!');
-                                return false;
+                                reject();
                             }
-                        }else{
+                        } else {
                             $.warn('没有"success"或类型不为"function"!');
-                            return false;
+                            reject();
                         }
-                    }
-                    $.ajax(options);
-                }else{
+                    },function(){
+                        reject();
+                    });
+                } else {
                     $.warn('请输入正确的"asyncField"字段!');
-                    return false;
+                    reject();
                 }
+            });
+
+            return itPromise;
+
         }
 
     }
@@ -760,7 +793,7 @@
     //合并基础配置
     if (typeof options === 'object' && !$.isEmptyObject(options)) {
         for (var prop in options) {
-            if($.hasOwn(options, prop)) {
+            if ($.hasOwn(options, prop)) {
                 defaults[prop] = $.mixIn({}, originDefaults);
                 $.mixIn(defaults[prop], options[prop]);
             }

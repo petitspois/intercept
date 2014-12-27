@@ -22,7 +22,10 @@
                 asyncField:{
                     'username':{
                         url:'http://localhost:63342/intercept/tests/index.html',
-                        type:'post'
+                        type:'post',
+                        'success':function(result){
+                            return true;
+                        }
                     }
                 },
                 //异步提交表单
