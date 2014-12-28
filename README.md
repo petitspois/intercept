@@ -1,5 +1,5 @@
-###intercept.js 
-=====
+intercept.js 
+=============
 ```
 超简单表单验证解决方案
 ```
@@ -64,10 +64,10 @@ $it({
 });
 ```
 ####验证属性
-- **required** : 必填字段
--  
+* **required** : 必填字段
+ 
 
-# 兼容
+####兼容性
 * ![ie10](http://ydrimg.oss-cn-hangzhou.aliyuncs.com/20140919111504913271952205.png) IE8+
 * ![chrome](http://ydrimg.oss-cn-hangzhou.aliyuncs.com/20140919111534857215164833.png) chrome latest
 * ![firefox](http://ydrimg.oss-cn-hangzhou.aliyuncs.com/20140919111545251609050667.png) firefox latest
