@@ -32,14 +32,12 @@
                 async:{
                     'url':'http://localhost:63342/intercept/tests/index.html',
                     'type':'post'
-                }
+                },
+                trim:true
             },
             'middle': {
                 //提示信息，层级深度（为当先表单元素的下一个同胞元素）'siblings' => 表示同胞内插入信息, 'children' => 表示同胞的子元素内插入信息|默认值|
                 messDepth: 'sibling'
-            },
-            'all': {
-                messDepth: 'children'
             }
         });
     </script>
@@ -61,8 +59,8 @@
             <div class="controls">
 
                 <!--username-->
-                <input name="username" it-async it-maxlength="8" it-messages="输入正确!!"
-                       type="text" placeholder="Email"  required>
+                <input name="username" it-async it-messages="sdfsf"
+                       type="text" placeholder="Email"  >
                 <!--end username-->
 
                 <span class="help-inline"><span></span></span>
@@ -87,8 +85,9 @@
 
             <div class="controls">
                 <!--password-->
-                <input name="password" type="password" it-password placeholder="Password">
+                <input name="password" it-password type="password" placeholder="Password">
                 <!--end password-->
+                <span class="help-inline"></span>
             </div>
         </div>
 
@@ -100,6 +99,7 @@
                 <!--password1-->
                 <input name="password1" type="password" it-password placeholder="Password">
                 <!--end password1-->
+                <span class="help-inline"></span>
             </div>
         </div>
         <fieldset>

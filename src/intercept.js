@@ -39,6 +39,10 @@
 
     var modules = {};
 
+    //password队列
+
+    var passwordCollection = {};
+
     var it = function (selector) {
         var self = it.prototype,
             elements = [];
@@ -61,8 +65,9 @@
 
         constructor: it,
 
-        trim: function (str) {
-            return str.replace(/^\s+|\s+$/g, '');
+        trim: function (str, ctrl) {
+            ctrl = defaults[ctrl] || defaults['all'] || {trim:false};
+            return ctrl['trim'] ? str.replace(/^\s+|\s+$/g, '') : str;
         },
 
         isEmptyObject: function (obj) {
@@ -91,20 +96,28 @@
             }
             return [].slice.call(iterable);
         },
+        isNaN : function(value){
+            return value !== value;
+        },
         hasOwn: function (obj, prop) {
             return op.hasOwnProperty.call(obj, prop);
         },
         indexOf: function (searchobj, searchvalue) {
             return String.prototype.indexOf.call(searchobj, searchvalue);
         },
+        getBytes : function(str){
+            return str.replace(/[^\x00-\xff]/g, "**").length;
+        },
         getItAttr: function (attrs) {
             var itA = [],
                 i = 0,
                 attr,
+                pass,
                 nodeName,
-                must = false,
-                async = false,
+                must,
+                async,
                 chaos = $.toArray(attrs);
+                must = async = pass = false;
             while (attr = chaos[i++]) {
                 nodeName = attr.nodeName;
                 switch (nodeName) {
@@ -117,14 +130,20 @@
                     case 'it-async':
                         async = true;
                         break;
+                    case 'it-password':
+                        pass = true;
+                        break;
                     default :
                         (nodeName.charAt(2) === '-' && nodeName.slice(0, 2) === 'it') && itA.push(attr);
                 }
             }
-            //required为第二处理
-            must && (itA.splice(1, 0, 'required'));
+
+            //密码处理
+            pass && (itA.push('it-password'));
             //异步最后处理
             async && (itA.push('it-async'));
+            //required为第二处理,只要存在it属性就为必填字段
+            itA.length > 0 && itA[0]['nodeName'] == 'it-messages' ? itA.splice(1,0,'required') :itA.unshift('required');
             return itA;
         },
         camelize: function (target) {
@@ -220,7 +239,11 @@
          */
         getMess: function (mess, type, ctrl, el, frNe) {
             var elName = el.name,
-                messContent = defaults[ctrl]['messContent'][elName];
+                messContent;
+                ctrl = defaults[ctrl] || defaults['all'];
+
+                messContent = !!ctrl['messContent'] && ctrl['messContent'][elName];
+
             if (!!mess) {  //dom上有it-messages的情况
                 var messColl = mess.split('|');
                 return this.returnMess(messColl, type, ctrl, elName, frNe);
@@ -231,20 +254,20 @@
 
                     //启用默认
                 } else {
-
-                    return this.returnMess(defaults[ctrl]['defaultMess'][frNe], type);
+                    return this.returnMess(ctrl['defaultMess'][frNe], type);
                 }
             }
 
         },
         returnMess: function (messColl, type, ctrl, elName, frNe) {
-            if (messColl[type] === undefined) {
-                if (defaults[ctrl]['messContent'][elName][type] !== undefined) {
-                    return defaults[ctrl]['messContent'][elName][type];
+            if (typeof messColl[type] == 'undefined') {
+                var messCon = ctrl['messContent'] || false,
+                    name = messCon && messCon[elName];
+                if (name && name[type] !== undefined) {
+                    return ctrl['messContent'][elName][type];
                 }
-                return defaults[ctrl]['defaultMess'][frNe][type];
-            }
-            ;
+                return ctrl['defaultMess'][frNe][type];
+            };
             return messColl[type];
         },
         serialize: function (form) {
@@ -325,7 +348,6 @@
         Promise.prototype.resolve = function (val) {
             if (this.status === 'pending') {
                 this.status = 'fulfilled';
-                alert(this.resolveFn)
                 this.resolveFn && this.resolveFn(val);
             }
         }
@@ -386,8 +408,8 @@
             for (var prop in ruleArray) {
                 if ($.hasOwn(ruleArray, prop)) {
                     frChild = ruleArray[prop].elements;
+                    passwordCollection[prop] = [];
                     controller[prop] = {};
-                    controller[prop]['status'] = false;
                     controller[prop]['elem'] = [];
                     for (var i = 0, el; el = frChild[i++];) {
                         if ($.filterType(el)) {
@@ -500,7 +522,7 @@
                     statusAndMess = function (status) {
                         //改变验证状态
                         typeof function (ind) {
-                            modules[control][ind]['status'] = status!==undefined ? status : true;
+                            modules[control][ind]['status'] = status = status!==undefined ? status : true;
                         }(index);
                         //执行媒体操作
                         status?
@@ -529,8 +551,7 @@
                         }(index);
                         $.warn('存在非intercept内部属性!');
                         continue;
-                    }
-                    ;
+                    };
                     //改变验证状态
                     typeof function (ind) {
                         modules[control][ind]['status'] = false;
@@ -659,6 +680,7 @@
                     sibling = it(el).siblings();
                 if (sibling === null) $.warn('请添加相邻元素!');
                 node = option['messDepth'] === 'sibling' ? sibling : false;
+                console.log(option['messDepth'])
                 if (node) {
                     type ? node.className = 'text-success' : node.className = 'text-error';
                     node.innerHTML = content;
@@ -714,14 +736,66 @@
     }
 
     Scope.prototype.$filter = {
-
-        'required': function (value) {
-            return $.trim(value) !== '';
+        //必填项
+        'required': function () {
+            var args = $.toArray(arguments);
+            return $.trim(args[0], args[2]) !== '';
         },
+        //最多输入字符长度
         'itMaxlength': function () {
             var args = $.toArray(arguments);
-            return args[0].length <= (+args[1]);
+            return $.trim(args[0], args[2]).length<= $.trim(+args[1]);
         },
+        //最少输入字符长度
+        'itMinlength': function () {
+            var args = $.toArray(arguments);
+            //0，文本值 1，属性值
+            return $.trim(args[0], args[2]).length >= $.trim(+args[1]);
+        },
+        //最大值
+        'itMax':function(){
+            var args = $.toArray(arguments),numArgs1,numArgs2;
+            numArgs1 = +$.trim(args[0], args[2]);
+            numArgs2 = +$.trim(args[1]);
+            if($.isNaN(numArgs1) || $.isNaN(numArgs2))return false;
+            if(numArgs1<=numArgs2){
+                return true;
+            } else{
+                return false;
+            }
+        },
+        //最大值
+        'itMin':function(){
+            var args = $.toArray(arguments),numArgs1,numArgs2;
+            numArgs1 = +$.trim(args[0], args[2]);
+            numArgs2 = +$.trim(args[1]);
+            if($.isNaN(numArgs1) || $.isNaN(numArgs2))return false;
+            if(numArgs1>=numArgs2){
+                return true;
+            } else{
+                return false;
+            }
+        },
+        //最大字节数
+        'itMaxbytes':function(){
+            var args = $.toArray(arguments);
+            return $.getBytes($.trim(args[0], args[2]))<=$.trim(args[1]);
+        },
+        //最小字节数
+        'itMinbytes':function(){
+            var args = $.toArray(arguments);
+            return $.getBytes($.trim(args[0], args[2]))>=$.trim(args[1]);
+        },
+        'itPassword':function(){
+            var args = $.toArray(arguments),
+                pcArrayLen = passwordCollection[args[2]]['length'];
+            if(!!pcArrayLen){
+
+            }else{
+                return true;
+            }
+        },
+        //异步验证字段
         'itAsync': function () {
             var options,
                 itPromise,
@@ -776,11 +850,37 @@
     var originDefaults = {
             //插入信息深度
             'messDepth': 'children',
+            //是否进行trim后才进行验证
+            'trim':true,
             //默认过滤信息
             'defaultMess': {
                 itMaxlength: {
                     0: hook,
                     1: '超过字符最大长度!'
+                },
+                itMinlength: {
+                    0: hook,
+                    1: '低于字符最小长度!'
+                },
+                itMax:{
+                    0:hook,
+                    1:'输入数字大于限定值或类型不为"number"!'
+                },
+                itMin:{
+                    0:hook,
+                    1:'输入数字小于限定值或类型不为"number"!'
+                },
+                itMaxbytes:{
+                    0:hook,
+                    1:'输入字节数大于限定值!'
+                },
+                itMinbytes:{
+                    0:hook,
+                    1:'输入字节数小于限定值!'
+                },
+                itPassword:{
+                    0:hook,
+                    1:'密码要保持一致,请重新输入!'
                 },
                 required: {
                     0: hook,

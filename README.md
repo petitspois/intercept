@@ -65,6 +65,15 @@ $it({
 ```
 ####验证属性
 * **required** : 必填字段
+* **it-async** : 需要异步验证字段（配置项必须有asyncField，并且以该字段name为名字的一个配置）
+* **it-maxlength** : 最多输入字符长度
+* **it-minlength** : 最少输入字符长度
+* **it-max** : 最大值（该项为数字的最大值）
+* **it-min** : 最小值（该项为数字的最小值）
+* **it-maxbytes** : 最大字节数
+* **it-minbytes** : 最小字节数
+* **it-password** : 验证前一个"it-password"的值与当前值是否相等
+* **it-messages** : 信息字段等同与配置项的messContent，例： 成功信息|错误信息|提示信息
  
 
 ####兼容性
