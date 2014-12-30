@@ -33,15 +33,13 @@
     //简单过滤后的dom,以及初始状态
     var controller = {};
 
-    var flawless = [];
-
     //需要验证的模组
 
     var modules = {};
 
     //password队列
 
-    var passwordCollection = {};
+    var passCollection = [];
 
     var it = function (selector) {
         var self = it.prototype,
@@ -54,6 +52,27 @@
         self._elem = elements;
         return self;
     }
+
+    //常用正则表达式
+    //匹配数字
+    var rNumber = /^\d+$/g,
+
+        //中文字符
+        rChinese = /[\u4e00-\u9fa5]/,
+
+        //email
+        rEmail = /[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?/,
+
+        //网址url
+        rHttpUrl = /[a-zA-z]+:\/\/[^\s]*/,
+
+        //qq号码
+        rQQ = /[1-9][0-9]{4,}/,
+
+        //国内电话
+        rPhone = /\d{3}-\d{8}|\d{4}-\{7,8}/;
+
+
 
     ////////////////////
     // 为it添加工具方法 //
@@ -408,7 +427,6 @@
             for (var prop in ruleArray) {
                 if ($.hasOwn(ruleArray, prop)) {
                     frChild = ruleArray[prop].elements;
-                    passwordCollection[prop] = [];
                     controller[prop] = {};
                     controller[prop]['elem'] = [];
                     for (var i = 0, el; el = frChild[i++];) {
@@ -445,18 +463,16 @@
     /* formelements 事件捆绑 */
     it.prototype.events = function () {
         controller && void function () {
-            var prop, el;
+            var prop, el, data;
             for (prop in controller) {
                 var i = 0, local;
                 if ($.hasOwn(controller, prop)) {
                     while (el = controller[prop]['elem'][local = i++]) {
                         //需要验证的字段，绑定事件
                         if (!$.getItAttr(el.attributes).length)break;
+                        data = {'elem': el, 'status': false };
                         modules[prop] = modules[prop] || [];
-                        modules[prop]['push']({
-                            'elem': el,
-                            'status': false
-                        });
+                        modules[prop]['push'](data);
                         //绑定事件
                         switch (el.type) {
                             case 'select-one':
@@ -508,11 +524,13 @@
             while (node = itArray[i++]) {
                 var filterName = $.camelize(node.nodeName || node),
                     mess = !!$.Observer[filterName];
-                //集合第一条不为it-messages
-                //$scope.$filter.filtername args(原始值，当前字段属性值，控制器范围)
-                !mess && (isVia = $scope.$filter[filterName] && $scope.$filter[filterName](newValue, (node.value || node), control, name));
                 //集合第一条为it-messages,对mg进行赋值
                 mess && (mg = node.value);
+                //集合第一条不为it-messages
+                //$scope.$filter.filtername args(原始值，当前字段属性值，控制器范围)
+                typeof function(ind){
+                    !mess && (isVia = $scope.$filter[filterName] && $scope.$filter[filterName](newValue, (node.value || node), control, name, ind, elem, mg));
+                }(index);
                 //验证返回值或信息为true时
                 if (isVia || mess) {
                     typeof function () {
@@ -680,7 +698,6 @@
                     sibling = it(el).siblings();
                 if (sibling === null) $.warn('请添加相邻元素!');
                 node = option['messDepth'] === 'sibling' ? sibling : false;
-                console.log(option['messDepth'])
                 if (node) {
                     type ? node.className = 'text-success' : node.className = 'text-error';
                     node.innerHTML = content;
@@ -786,14 +803,90 @@
             var args = $.toArray(arguments);
             return $.getBytes($.trim(args[0], args[2]))>=$.trim(args[1]);
         },
+        //纯数字
+        'itNumber':function(){
+            var args = $.toArray(arguments),
+                ctrl = args[2],
+                value = $.trim(args[0],ctrl);
+            return this.itPattern(value, rNumber, ctrl);
+        },
+        //email
+        'itEmail':function(){
+            var args = $.toArray(arguments),
+                ctrl = args[2],
+                value = $.trim(args[0],ctrl);
+            return this.itPattern(value, rEmail, ctrl);
+        },
+        //网址
+        'itWeburl':function(){
+            var args = $.toArray(arguments),
+                ctrl = args[2],
+                value = $.trim(args[0],ctrl);
+            return this.itPattern(value, rHttpUrl, ctrl);
+        },
+        //模式匹配
+        'itPattern':function(){
+            var args = $.toArray(arguments),
+                ctrl = args[2],
+                value = $.trim(args[0],ctrl),
+                pattern = eval(args[1]);
+            return pattern.test(value);
+        },
+        //密码是否相等对比
         'itPassword':function(){
             var args = $.toArray(arguments),
-                pcArrayLen = passwordCollection[args[2]]['length'];
-            if(!!pcArrayLen){
+                ctrl = args[2],
+                index = args[4],
+                el = args[5],
+                mg = args[6],
+                passIndexsLen,
+                value = $.trim(args[0], ctrl),passCollLen,data,
+                addPassColl = function(type, val, ind){
+                    data = {value:val,elem:el,index:ind};
+                    passCollection[type](data);
+                };
+                passCollLen = passCollection.length;
+                //插入数据
+                if(passCollLen<2){
+                    //添加
+                    if(passCollLen){
+                        index>passCollection[0]['index'] ?
+                            addPassColl('push', value, index):
+                            addPassColl('unshift', value, index);
+                    }else{
+                        addPassColl('push', value, index);
+                    }
+                }else{
+                    //更新
+                    if(passCollection[0]['index']==index){
+                        passCollection[0]['value'] = value;
+                    }else{
+                        passCollection[1]['value'] = value;
+                    }
+                }
 
-            }else{
-                return true;
-            }
+                //数据比较
+
+                if(passCollLen>0){
+                    var ind = passCollection[0]['index'] == index;
+                    if(passCollection[0]['value'] == passCollection[1]['value']){
+                         if(ind){
+                             modules[ctrl][passCollection[1]['index']]['status'] = true;
+                             $.Observer.itMessages.success(mg, passCollection[1]['elem'], ctrl, 'itPassword');
+                         }
+                         return true;
+                    }else{
+                        if(ind){
+                            modules[ctrl][passCollection[1]['index']]['status'] = false;
+                            $.Observer.itMessages.error(mg, passCollection[1]['elem'], ctrl, 'itPassword');
+                            return true;
+                        }
+                        return false;
+                    }
+                }else{
+                    return true;
+                }
+
         },
         //异步验证字段
         'itAsync': function () {
@@ -881,6 +974,22 @@
                 itPassword:{
                     0:hook,
                     1:'密码要保持一致,请重新输入!'
+                },
+                itPattern:{
+                    0:hook,
+                    1:'正则匹配错误!'
+                },
+                itEmail:{
+                    0:hook,
+                    1:'请输入正确email地址!'
+                },
+                itWeburl:{
+                    0:hook,
+                    1:'请输入正确的网址!'
+                },
+                itNumber:{
+                    0:hook,
+                    1:'请输入纯数字!'
                 },
                 required: {
                     0: hook,

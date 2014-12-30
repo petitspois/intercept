@@ -11,13 +11,13 @@
                 //提示信息，层级深度（为当先表单元素的下一个同胞元素）'sibling' => 表示同胞内插入信息, 'children' => 表示同胞的子元素内插入信息|默认值|
                 messDepth: 'sibling',
                 //提示信息具体内容 { number } 0=>成功时提示信息, 1=>失败时提示信息, 2=>提醒信息
-                messContent : {
-                    username: {
-                        0: '输入正确!!!',
-                        1: '你输入的手机号码格式有误，需为 11 位数字格式',
-                        2: '请输入11位手机号码'
-                    }
-                },
+//                messContent : {
+//                    username: {
+//                        0: '输入正确!!!',
+//                        1: '你输入的手机号码格式有误，需为 11 位数字格式',
+//                        2: '请输入11位手机号码'
+//                    }
+//                },
                 //字段异步操作
                 asyncField:{
                     'username':{
@@ -32,8 +32,9 @@
                 async:{
                     'url':'http://localhost:63342/intercept/tests/index.html',
                     'type':'post'
-                },
-                trim:true
+                }
+                //去前后空格，|默认true|
+                //trim:true
             },
             'middle': {
                 //提示信息，层级深度（为当先表单元素的下一个同胞元素）'siblings' => 表示同胞内插入信息, 'children' => 表示同胞的子元素内插入信息|默认值|
@@ -59,7 +60,7 @@
             <div class="controls">
 
                 <!--username-->
-                <input name="username" it-async it-messages="sdfsf"
+                <input name="username" it-number
                        type="text" placeholder="Email"  >
                 <!--end username-->
 
@@ -102,6 +103,7 @@
                 <span class="help-inline"></span>
             </div>
         </div>
+
         <fieldset>
             <div class="control-group">
                 <label class="control-label">性别</label>

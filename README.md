@@ -73,8 +73,11 @@ $it({
 * **it-maxbytes** : 最大字节数
 * **it-minbytes** : 最小字节数
 * **it-password** : 验证前一个"it-password"的值与当前值是否相等
+* **it-pattern** : 匹配一个正则表达式
+* **it-email** : 匹配一个email地址
+* **it-weburl** : 匹配一个网址
 * **it-messages** : 信息字段等同与配置项的messContent，例： 成功信息|错误信息|提示信息
- 
+####注意事项
 
 ####兼容性
 * ![ie10](http://ydrimg.oss-cn-hangzhou.aliyuncs.com/20140919111504913271952205.png) IE8+
