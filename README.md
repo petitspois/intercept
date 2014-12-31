@@ -30,10 +30,12 @@ intercept.js
 ``` javascript
 $it({
      'top': {
+
           //提示信息，层级深度（为当先表单元素的下一个同胞元素）
           //'sibling' => 表示同胞内插入信息, 
           //'children' => 表示同胞的子元素内插入信息|默认值|
           messDepth: 'sibling',
+
           //提示信息具体内容 { number } 0=>成功时提示信息, 1=>失败时提示信息, 2=>提醒信息
           messContent : {
               username: {
@@ -42,6 +44,7 @@ $it({
                   2: '请输入11位手机号码'
               }
           },
+
           //字段异步操作
           asyncField:{
               'username':{
@@ -52,11 +55,18 @@ $it({
                   }
               }
           },
+
           //异步提交表单
           async:{
               'url':'http://localhost:63342/intercept/tests/index.html',
               'type':'post'
-          }
+          },
+
+          //去前后空格，|默认true|
+          trim:true,
+
+          //是否显示提示信息
+          prompts:true
        },
       'all': {
            messDepth: 'children'

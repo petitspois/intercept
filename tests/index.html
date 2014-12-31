@@ -9,15 +9,18 @@
         $it({
             'top': {
                 //提示信息，层级深度（为当先表单元素的下一个同胞元素）'sibling' => 表示同胞内插入信息, 'children' => 表示同胞的子元素内插入信息|默认值|
-                messDepth: 'sibling',
-                //提示信息具体内容 { number } 0=>成功时提示信息, 1=>失败时提示信息, 2=>提醒信息
-//                messContent : {
-//                    username: {
-//                        0: '输入正确!!!',
-//                        1: '你输入的手机号码格式有误，需为 11 位数字格式',
-//                        2: '请输入11位手机号码'
-//                    }
-//                },
+                //messDepth: 'sibling',
+                //提示信息具体内容 { number } 0=>成功时提示信息, 1=>失败时提示信息, 2=>提醒信息info
+                messContent : {
+                    username: {
+                        0: '输入正确!!!',
+                        1: '你输入的手机号码格式有误，需为 11 位数字格式!',
+                        2: '请输入11位手机号码!'
+                    },
+                    code:{
+                        2:'请输入手机校验码!'
+                    }
+                },
                 //字段异步操作
                 asyncField:{
                     'username':{
@@ -34,8 +37,11 @@
                     'type':'post'
                 },
                 //去前后空格，|默认true|
-                trim:true,
+                trim:true
                 //是否显示提示信息
+                //prompts:true
+            },
+            'all':{
                 prompts:true
             }
         });
@@ -63,7 +69,6 @@
                 <!--end username-->
 
                 <span class="help-inline"><span></span></span>
-
             </div>
         </div>
 
@@ -73,9 +78,9 @@
             <div class="controls">
 
                 <!--短信-->
-                <input name="code" type="text" class="input-small" required />
+                <input name="code" type="text"  it-number class="input-small" required />
                 <!--短信-->
-
+                <span class="help-inline"><span></span></span>
                 <a href="#" class="btn disabled" style="margin-left:17px;">手机校验码</a>
             </div>
         </div>
@@ -84,7 +89,7 @@
 
             <div class="controls">
                 <!--password-->
-                <input name="password" it-password type="password" placeholder="Password">
+                <input name="password" type="password" placeholder="Password">
                 <!--end password-->
                 <span class="help-inline"></span>
             </div>
@@ -96,7 +101,7 @@
 
             <div class="controls">
                 <!--password1-->
-                <input name="password1" type="password" it-password placeholder="Password">
+                <input name="password1" type="password" placeholder="Password">
                 <!--end password1-->
                 <span class="help-inline"></span>
             </div>
@@ -124,10 +129,11 @@
 
             <div class="controls">
                 <select name="country" class="span2">
-                    <option value="中国">中国</option>
+                    <option value="">中国</option>
                     <option value="美国">美国</option>
                     <option value="澳大利亚">澳大利亚</option>
                 </select>
+                <span class="help-inline"></span>
             </div>
         </div>
 
@@ -136,7 +142,6 @@
 
             <div class="controls">
                 <input name="verification" type="text" class="input-small"/>
-                <!--<a href="#" class="btn disabled" style="margin-left:17px;">手机校验码</a>-->
             </div>
         </div>
         <div class="control-group">

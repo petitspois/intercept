@@ -185,7 +185,7 @@
             //异步最后处理
             async && (itA.push('it-async'));
             //required为第二处理,只要存在it属性就为必填字段
-            itA.length > 0 && itA[0]['nodeName'] == 'it-messages' ? itA.splice(1,0,'required') :itA.unshift('required');
+            itA.length > 0 && (itA[0]['nodeName'] == 'it-messages' ? itA.splice(1,0,'required'):itA.unshift('required'));
             return itA;
         },
         camelize: function (target) {
@@ -308,6 +308,7 @@
                 if (name && name[type] !== undefined) {
                     return ctrl['messContent'][elName][type];
                 }
+                modules[ctrl]
                 return ctrl['defaultMess'][frNe][type];
             };
             return messColl[type];
@@ -490,10 +491,10 @@
             for (prop in controller) {
                 var i = 0, local;
                 if ($.hasOwn(controller, prop)) {
-                    while (el = controller[prop]['elem'][local = i++]) {
+                    loop : while (el = controller[prop]['elem'][local = i++]) {
                         //需要验证的字段，绑定事件
-                        if (!$.getItAttr(el.attributes).length)break;
-                        data = {'elem': el, 'status': false };
+                        if (!$.getItAttr(el.attributes).length)break loop;
+                        data = {'elem': el, 'status': false ,'msg':''};
                         modules[prop] = modules[prop] || [];
                         modules[prop]['push'](data);
                         //绑定事件
@@ -513,10 +514,39 @@
                                 void function (p, local) {
                                     $.watch(p, el.name, el, local);
                                     it(el).on(go, function () {
-                                        var me = this;
+                                        var me = this,equal = false;
                                         $scope[p + '$' + me.name] = me.value;
-                                        $scope.$digest();
+                                        equal = $scope.$digest();
+
+                                        try{
+
+                                            //当验证值相等与”prompts“为true时
+                                            if(equal && (defaults[prop]['prompts'] || defaults['all']['prompts'])){
+                                                var msg = modules[prop][local]['msg'],
+                                                    sibling = it(me).siblings();
+                                                if(defaults[prop]['messDepth'] === 'children'){
+                                                    msg.s ? sibling.children[0].className = 'text-error':
+                                                        sibling.children[0].className = 'text-success';
+                                                    sibling.children[0].innerHTML = msg.v;
+                                                }else{
+                                                    msg.s ? sibling.className = 'text-error' : sibling.className = 'text-success';
+                                                    sibling.innerHTML = msg.v;
+                                                }
+                                            }
+
+                                        }catch(e){}
+
                                     });
+
+                                    //提示信息
+                                    try{
+                                        if(defaults[prop]['prompts'] || defaults['all']['prompts']){
+                                            it(el).on('mousedown', function () {
+                                                $.Observer.itMessages.info(this, prop, local);
+                                            });
+                                        }
+                                    }catch(e){}
+
                                 }(prop, local);
                         }
                     }
@@ -560,24 +590,32 @@
                         ii = i
                     }();
                     if (itLen !== ii) continue;
-                    statusAndMess = function (status) {
-                        //改变验证状态
+                    statusAndMess = function (status, async) {
+
+                        //同步异步信息处理
+                        mg = async ? '异步字段验证成功!|异步字段验证失败!' : mg;
+
                         typeof function (ind) {
+
+                            //改变验证状态
                             modules[control][ind]['status'] = status = status!==undefined ? status : true;
+
+                            //执行媒体操作
+                            status?
+                                $.Observer.itMessages.success(mg, elem, control, filterName, ind):
+                                $.Observer.itMessages.error(mg, elem, control, filterName, ind);
+
                         }(index);
-                        //执行媒体操作
-                        status?
-                            $.Observer.itMessages.success(mg, elem, control, filterName):
-                            $.Observer.itMessages.error(mg, elem, control, filterName);
+
                     }
 
                     //如果存在异步字段
                     if (isAsync) {
                         itasync = $scope.$filter.itAsync(newValue, (node.value || node), control, name);
                         itasync.then(function () {
-                            statusAndMess(true);
+                            statusAndMess(true, true);
                         }, function () {
-                            statusAndMess(false);
+                            statusAndMess(false, true);
                         });
                     } else {
                         statusAndMess();
@@ -593,12 +631,17 @@
                         $.warn('存在非intercept内部属性!');
                         continue;
                     };
-                    //改变验证状态
+
                     typeof function (ind) {
+
+                        //改变验证状态
                         modules[control][ind]['status'] = false;
+
+                        //执行媒体操作
+                        $.Observer.itMessages.error(mg, elem, control, filterName, ind);
+
                     }(index);
-                    //执行媒体操作
-                    $.Observer.itMessages.error(mg, elem, control, filterName);
+
                     break;
                 }
             }
@@ -621,7 +664,7 @@
                                 break;
                             }
                         }
-                        console.log(modules[ctrl])
+
                         //拦截验证失败时
                         pointer && $.preventDefault(e);
 
@@ -696,15 +739,36 @@
 
     it.prototype.Observer = {
         itMessages: {
-            success: function (mess, el, ctrl, frNe) {
+            success: function (mess, el, ctrl, frNe, ind) {
                 mess = $.getMess(mess, 0, ctrl, el, frNe);
-                this.trusteeship(1, mess, el);
+                modules[ctrl][ind]['msg'] = {s:0, v:mess};
+                this.trusteeship(1, mess, el, ctrl);
             },
-            error: function (mess, el, ctrl, frNe) {
+            error: function (mess, el, ctrl, frNe, ind) {
                 mess = $.getMess(mess, 1, ctrl, el, frNe);
-                this.trusteeship(0, mess, el);
+                modules[ctrl][ind]['msg'] = {s:1, v:mess};
+                this.trusteeship(0, mess, el, ctrl);
             },
-            info: function () {
+            info: function (el, ctrl, ind) {
+                var msg;
+
+                try{
+                    msg = el.getAttribute('it-messages').split('|');
+                }catch (e){
+                    //配置项是否设置信息
+                    try{
+                        msg = defaults[ctrl]['messContent'][el.name];
+                        !msg && it.it();
+                    }catch(e){
+                        throw new Error('prompts为true时，请在dom上设置"it-messages"或配置项设置"messContent"!');
+                    }
+                }
+
+                if(!msg[2]){
+                    throw new Error('请为"it-messages"或配置项,设置提示信息!');
+                }
+
+                this.trusteeship(2, msg[2], el, ctrl);
 
             },
             /**
@@ -715,20 +779,37 @@
              * @param {object} 操作元素
              *
              */
-            trusteeship: function (type, content, el) {
-                var control = el.form.getAttribute('it-controller'),
-                    option = $.isAll() ? defaults['all'] : defaults[control], node,
+            trusteeship: function (type, content, el, control) {
+                var option = defaults[control] || defaults['all'], node,
                     sibling = it(el).siblings();
                 if (sibling === null) $.warn('请添加相邻元素!');
                 node = option['messDepth'] === 'sibling' ? sibling : false;
                 if (node) {
-                    type ? node.className = 'text-success' : node.className = 'text-error';
+                    switch(type){
+                        case 0:
+                            node.className = 'text-error'
+                            break;
+                        case 1:
+                            node.className = 'text-success'
+                            break;
+                        default:
+                            node.className = 'text-info'
+                    }
                     node.innerHTML = content;
                 } else {
-                    if (option['messDepth'] === 'children') {
+                    if (option['messDepth'] === 'children'){
                         var child = sibling.children[0];
                         if (child) {
-                            type ? child.className = 'text-success' : child.className = 'text-error';
+                            switch(type){
+                                case 0:
+                                    child.className = 'text-error'
+                                    break;
+                                case 1:
+                                    child.className = 'text-success'
+                                    break;
+                                default:
+                                    child.className = 'text-info'
+                            }
                             child.innerHTML = content;
                         } else {
                             $.warn('请在信息中添加子元素!');
@@ -759,20 +840,27 @@
     }
 
     Scope.prototype.$digest = function () {
-        var dirty;
+        var dirty, once = false,equal = false;
         do {
             var i = 0, watcher;
             dirty = false;
             while (watcher = this.$$watchers[i++]) {
                 var newValue = watcher.watchExp(),
                     oldValue = watcher.last;
-                oldValue !== newValue && (
-                    watcher.listener(newValue),
-                        dirty = true,
-                        watcher.last = newValue
-                );
+                if(oldValue !== newValue) {
+                    watcher.listener(newValue);
+                    dirty = true;
+                    !once && (equal = false);
+                     once = true;
+                    watcher.last = newValue;
+                }else{
+                    !once && (equal = true);
+                     once = true;
+                }
             }
         } while (dirty);
+
+        return equal;
     }
 
     Scope.prototype.$filter = {
@@ -968,7 +1056,12 @@
                 value = $.trim(args[0]),
                 name = args[3],
                 control = args[2];
-            options = defaults[control]['asyncField'][name] || {};
+
+            try{
+                options = defaults[control]['asyncField'][name] || {};
+            }catch(e){
+                throw new Error('请设置"asyncField"!');
+            }
             itPromise = new Promise(function (resolve, reject) {
                 if (typeof options == 'object' && !$.isEmptyObject(options)) {
                     //添加data数据
@@ -1017,6 +1110,8 @@
             'messDepth': 'children',
             //是否进行trim后才进行验证
             'trim':true,
+            //是否显示提示信息
+            'prompts':false,
             //默认过滤信息
             'defaultMess': {
                 itMaxlength: {
