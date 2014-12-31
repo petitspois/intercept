@@ -32,13 +32,11 @@
                 async:{
                     'url':'http://localhost:63342/intercept/tests/index.html',
                     'type':'post'
-                }
+                },
                 //去前后空格，|默认true|
-                //trim:true
-            },
-            'middle': {
-                //提示信息，层级深度（为当先表单元素的下一个同胞元素）'siblings' => 表示同胞内插入信息, 'children' => 表示同胞的子元素内插入信息|默认值|
-                messDepth: 'sibling'
+                trim:true,
+                //是否显示提示信息
+                prompts:true
             }
         });
     </script>
@@ -60,7 +58,7 @@
             <div class="controls">
 
                 <!--username-->
-                <input name="username" it-number
+                <input name="username" it-integer
                        type="text" placeholder="Email"  >
                 <!--end username-->
 

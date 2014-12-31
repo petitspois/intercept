@@ -41,6 +41,49 @@
 
     var passCollection = [];
 
+    //常用正则表达式
+    //匹配数字
+    var rNumber = /^\d+$/g,
+
+        //中文字符
+        rChinese = /^[\u4e00-\u9fa5]+$/,
+
+        //email
+        rEmail = /[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?/,
+
+        //网址url
+        rHttpUrl = /[a-zA-z]+:\/\/[^\s]*/,
+
+        //qq号码
+        rQQ = /^[1-9][0-9]{4,}$/,
+
+        //国内电话
+        rPhone = /^((0\d{2,3})-)(\d{7,8})(-(\d{3,}))?$/,
+
+        /**
+         * @descrition:手机号码段规则
+         * 13段：130、131、132、133、134、135、136、137、138、139
+         * 14段：145、147
+         * 15段：150、151、152、153、155、156、157、158、159
+         * 17段：170、176、177、178
+         * 18段：180、181、182、183、184、185、186、187、188、189
+         *
+         */
+
+        rTel = /^(13[0-9]|14[57]|15[012356789]|17[0678]|18[0-9])\d{8}$/,
+
+        //日期（YYYY/MM/DD、YYYY/M/D、YYYY-MM-DD、YYYY-M-D）
+        rDate = /^\d{4}[\/\-](0?[1-9]|1[012])[\/\-](0?[1-9]|[12][0-9]|3[01])$|^(?:(?:(?:0?[13578]|1[02])(\/|-)31)|(?:(?:0?[1,3-9]|1[0-2])(\/|-)(?:29|30)))(\/|-)(?:[1-9]\d\d\d|\d[1-9]\d\d|\d\d[1-9]\d|\d\d\d[1-9])$|^(?:(?:0?[1-9]|1[0-2])(\/|-)(?:0?[1-9]|1\d|2[0-8]))(\/|-)(?:[1-9]\d\d\d|\d[1-9]\d\d|\d\d[1-9]\d|\d\d\d[1-9])$|^(0?2(\/|-)29)(\/|-)(?:(?:0[48]00|[13579][26]00|[2468][048]00)|(?:\d\d)?(?:0[48]|[2468][048]|[13579][26]))$/,
+
+        //身份证
+        rIdentity = /^(\d{6})(\d{4})(\d{2})(\d{2})(\d{3})([0-9]|X|x)$/,
+
+        //匹配整数
+        rInteger = /^-?[1-9]\d*$/;
+
+
+
+
     var it = function (selector) {
         var self = it.prototype,
             elements = [];
@@ -52,26 +95,6 @@
         self._elem = elements;
         return self;
     }
-
-    //常用正则表达式
-    //匹配数字
-    var rNumber = /^\d+$/g,
-
-        //中文字符
-        rChinese = /[\u4e00-\u9fa5]/,
-
-        //email
-        rEmail = /[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?/,
-
-        //网址url
-        rHttpUrl = /[a-zA-z]+:\/\/[^\s]*/,
-
-        //qq号码
-        rQQ = /[1-9][0-9]{4,}/,
-
-        //国内电话
-        rPhone = /\d{3}-\d{8}|\d{4}-\{7,8}/;
-
 
 
     ////////////////////
@@ -810,12 +833,61 @@
                 value = $.trim(args[0],ctrl);
             return this.itPattern(value, rNumber, ctrl);
         },
+        //中文字符
+        'itChinese':function(){
+            var args = $.toArray(arguments),
+                ctrl = args[2],
+                value = $.trim(args[0],ctrl);
+            return this.itPattern(value, rChinese, ctrl);
+        },
+        //整数
+        'itInteger':function(){
+            var args = $.toArray(arguments),
+                ctrl = args[2],
+                value = $.trim(args[0],ctrl);
+            return this.itPattern(value, rInteger, ctrl);
+        },
+        //QQ
+        'itQq':function(){
+            var args = $.toArray(arguments),
+                ctrl = args[2],
+                value = $.trim(args[0],ctrl);
+            return this.itPattern(value, rQQ, ctrl);
+        },
+        //phone
+        'itPhone':function(){
+            var args = $.toArray(arguments),
+                ctrl = args[2],
+                value = $.trim(args[0],ctrl);
+            return this.itPattern(value, rPhone, ctrl);
+        },
+        //tel
+        'itTel':function(){
+            var args = $.toArray(arguments),
+                ctrl = args[2],
+                value = $.trim(args[0],ctrl);
+            return this.itPattern(value, rTel, ctrl);
+        },
         //email
         'itEmail':function(){
             var args = $.toArray(arguments),
                 ctrl = args[2],
                 value = $.trim(args[0],ctrl);
             return this.itPattern(value, rEmail, ctrl);
+        },
+        //date
+        'itDate':function(){
+            var args = $.toArray(arguments),
+                ctrl = args[2],
+                value = $.trim(args[0],ctrl);
+            return this.itPattern(value, rDate, ctrl);
+        },
+        //身份证
+        'itIdentity':function(){
+            var args = $.toArray(arguments),
+                ctrl = args[2],
+                value = $.trim(args[0],ctrl);
+            return this.itPattern(value, rIdentity, ctrl);
         },
         //网址
         'itWeburl':function(){
@@ -990,6 +1062,34 @@
                 itNumber:{
                     0:hook,
                     1:'请输入纯数字!'
+                },
+                itQq:{
+                    0:hook,
+                    1:'请输入正确的qq号码!'
+                },
+                itChinese:{
+                    0:hook,
+                    1:'请输入正确中文字符!'
+                },
+                itPhone:{
+                    0:hook,
+                    1:'请输入正确电话号码!'
+                },
+                itTel:{
+                    0:hook,
+                    1:'请输入正确手机号码!'
+                },
+                itDate:{
+                    0:hook,
+                    1:'请输入正确日期格式!'
+                },
+                itIdentity:{
+                    0:hook,
+                    1:'请输入正确身份证件号!'
+                },
+                itInteger:{
+                    0:hook,
+                    1:'请输入整数!'
                 },
                 required: {
                     0: hook,
