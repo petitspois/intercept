@@ -109,6 +109,7 @@ $it({
 ####注意事项
 * **配置项all** : 如配置未设置其他"controller"那直接调用all,所有form将默认all配置。如果设置"controller",则在当前配置中找属性，没有在去all中寻找
 * **it-password** : 只针对2个字段进行对比，且每个字段都要有"it-password"属性
+* **it-messages** : 最好 成功信息|错误信息|提示信息  都填写
 ####兼容性
 * ![ie10](http://ydrimg.oss-cn-hangzhou.aliyuncs.com/20140919111504913271952205.png) IE8+
 * ![chrome](http://ydrimg.oss-cn-hangzhou.aliyuncs.com/20140919111534857215164833.png) chrome latest
