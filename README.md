@@ -36,8 +36,9 @@ $it({
           //'children' => 表示同胞的子元素内插入信息|默认值|
           messDepth: 'sibling',
 
-          //提示信息具体内容 { number } 0=>成功时提示信息, 1=>失败时提示信息, 2=>提醒信息
+          //提示信息具体内容  { number } 0=>成功时提示信息, 1=>失败时提示信息, 2=>提醒信息
           messContent : {
+              //以元素name值为key，例：name = username
               username: {
                   0: '输入正确!!!',
                   1: '你输入的手机号码格式有误，需为 11 位数字格式',
@@ -47,7 +48,9 @@ $it({
 
           //字段异步操作
           asyncField:{
+              //以元素name值为key，例：name = username
               'username':{
+                  //为3个键值，url,type,success(成功时执行的回调，必须返回boolean值)
                   url:'http://localhost:63342/intercept/tests/index.html',
                   type:'post',
                   'success':function(result){
@@ -56,17 +59,21 @@ $it({
               }
           },
 
-          //异步提交表单
+          //异步提交表单，
           async:{
+              //为3个键值(如不设置url值，则会寻找form action值)，url,type,success
               'url':'http://localhost:63342/intercept/tests/index.html',
-              'type':'post'
+              'type':'post',
+              'success':function(result){
+                   //成功时执行的回调
+              }
           },
 
           //去前后空格，|默认true|
           trim:true,
 
-          //是否显示提示信息
-          prompts:true
+          //是否显示提示信息，|默认false|
+          prompts:false
        },
       'all': {
            messDepth: 'children'
@@ -76,18 +83,18 @@ $it({
 ####验证属性
 <pre>
     ('x')  不需要给值的属性，例： it-async
-    ('d')  需要给值的属性, 例： it-maxlength='6'
+    ('v')  需要给值的属性, 例： it-maxlength='6'
 </pre>
 * **required** : 必填字段 --- ('x')
 * **it-async** : 需要异步验证字段（配置项必须有asyncField，并且以该字段name为名字的一个配置）--- ('x')
-* **it-maxlength** : 最多输入字符长度 --- ('d')
-* **it-minlength** : 最少输入字符长度 --- ('d')
-* **it-max** : 最大值（该项为数字的最大值）--- ('d')
-* **it-min** : 最小值（该项为数字的最小值）--- ('d')
-* **it-maxbytes** : 最大字节数 --- ('d')
-* **it-minbytes** : 最小字节数 --- ('d')
+* **it-maxlength** : 最多输入字符长度 --- ('v')
+* **it-minlength** : 最少输入字符长度 --- ('v')
+* **it-max** : 最大值（该项为数字的最大值）--- ('v')
+* **it-min** : 最小值（该项为数字的最小值）--- ('v')
+* **it-maxbytes** : 最大字节数 --- ('v')
+* **it-minbytes** : 最小字节数 --- ('v')
 * **it-password** : 验证前一个"it-password"的值与当前值是否相等 --- ('x')
-* **it-pattern** : 匹配一个正则表达式 --- ('d')
+* **it-pattern** : 匹配一个正则表达式 --- ('v')
 * **it-email** : 匹配一个email地址 --- ('x')
 * **it-weburl** : 匹配一个网址 --- ('x')
 * **it-chinese** : 匹配中文字符 --- ('x')
@@ -97,10 +104,11 @@ $it({
 * **it-date** : 匹配日期(YYYY/MM/DD、YYYY/M/D、YYYY-MM-DD、YYYY-M-D) --- ('x')
 * **it-identity** : 匹配身份证件号 --- ('x')
 * **it-integer** : 匹配整数 --- ('x')
-* **it-messages** : 信息字段等同与配置项的messContent，例： 成功信息|错误信息|提示信息 --- ('d')
+* **it-messages** : 信息字段等同与配置项的messContent，例： 成功信息|错误信息|提示信息 --- ('v')
 
 ####注意事项
-
+* **配置项all** : 如配置未设置其他"controller"那直接调用all,所有form将默认all配置。如果设置"controller",则在当前配置中找属性，没有在去all中寻找
+* **it-password** : 只针对2个字段进行对比，且每个字段都要有"it-password"属性
 ####兼容性
 * ![ie10](http://ydrimg.oss-cn-hangzhou.aliyuncs.com/20140919111504913271952205.png) IE8+
 * ![chrome](http://ydrimg.oss-cn-hangzhou.aliyuncs.com/20140919111534857215164833.png) chrome latest

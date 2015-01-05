@@ -109,6 +109,7 @@
 
         trim: function (str, ctrl) {
             ctrl = defaults[ctrl] || defaults['all'] || {trim:false};
+            console.log(str)
             return ctrl['trim'] ? str.replace(/^\s+|\s+$/g, '') : str;
         },
 
@@ -664,11 +665,10 @@
                                 break;
                             }
                         }
-
                         //拦截验证失败时
                         pointer && $.preventDefault(e);
 
-                        var options = defaults[ctrl]['async'];
+                        var options = defaults[ctrl] && defaults[ctrl]['async'];
                         //异步处理
                         (!!options && !pointer) && void function () {
                             //拦截同步提交
@@ -741,12 +741,12 @@
         itMessages: {
             success: function (mess, el, ctrl, frNe, ind) {
                 mess = $.getMess(mess, 0, ctrl, el, frNe);
-                modules[ctrl][ind]['msg'] = {s:0, v:mess};
+                ind && (modules[ctrl][ind]['msg'] = {s:0, v:mess});
                 this.trusteeship(1, mess, el, ctrl);
             },
             error: function (mess, el, ctrl, frNe, ind) {
                 mess = $.getMess(mess, 1, ctrl, el, frNe);
-                modules[ctrl][ind]['msg'] = {s:1, v:mess};
+                ind && (modules[ctrl][ind]['msg'] = {s:1, v:mess});
                 this.trusteeship(0, mess, el, ctrl);
             },
             info: function (el, ctrl, ind) {
@@ -864,6 +864,7 @@
     }
 
     Scope.prototype.$filter = {
+        //- arguments 0,文本值 1,属性值
         //必填项
         'required': function () {
             var args = $.toArray(arguments);
@@ -872,19 +873,19 @@
         //最多输入字符长度
         'itMaxlength': function () {
             var args = $.toArray(arguments);
-            return $.trim(args[0], args[2]).length<= $.trim(+args[1]);
+            return $.trim(args[0], args[2]).length<= +args[1];
         },
         //最少输入字符长度
         'itMinlength': function () {
             var args = $.toArray(arguments);
             //0，文本值 1，属性值
-            return $.trim(args[0], args[2]).length >= $.trim(+args[1]);
+            return $.trim(args[0], args[2]).length >= +args[1];
         },
         //最大值
         'itMax':function(){
             var args = $.toArray(arguments),numArgs1,numArgs2;
             numArgs1 = +$.trim(args[0], args[2]);
-            numArgs2 = +$.trim(args[1]);
+            numArgs2 = +args[1];
             if($.isNaN(numArgs1) || $.isNaN(numArgs2))return false;
             if(numArgs1<=numArgs2){
                 return true;
@@ -896,7 +897,7 @@
         'itMin':function(){
             var args = $.toArray(arguments),numArgs1,numArgs2;
             numArgs1 = +$.trim(args[0], args[2]);
-            numArgs2 = +$.trim(args[1]);
+            numArgs2 = +args[1];
             if($.isNaN(numArgs1) || $.isNaN(numArgs2))return false;
             if(numArgs1>=numArgs2){
                 return true;
@@ -907,12 +908,12 @@
         //最大字节数
         'itMaxbytes':function(){
             var args = $.toArray(arguments);
-            return $.getBytes($.trim(args[0], args[2]))<=$.trim(args[1]);
+            return $.getBytes($.trim(args[0], args[2]))<=args[1];
         },
         //最小字节数
         'itMinbytes':function(){
             var args = $.toArray(arguments);
-            return $.getBytes($.trim(args[0], args[2]))>=$.trim(args[1]);
+            return $.getBytes($.trim(args[0], args[2]))>=args[1];
         },
         //纯数字
         'itNumber':function(){
@@ -1112,6 +1113,8 @@
             'trim':true,
             //是否显示提示信息
             'prompts':false,
+            //异步提交
+            'async':false,
             //默认过滤信息
             'defaultMess': {
                 itMaxlength: {
@@ -1214,6 +1217,8 @@
         //提交操作
         $.submit();
     });
+
+    console.log(defaults)
 
     //返回公共对象
     return {'version': $.version, 'url': 'qingdou.me'}
