@@ -109,7 +109,6 @@
 
         trim: function (str, ctrl) {
             ctrl = defaults[ctrl] || defaults['all'] || {trim:false};
-            console.log(str)
             return ctrl['trim'] ? str.replace(/^\s+|\s+$/g, '') : str;
         },
 
@@ -525,6 +524,7 @@
                                             if(equal && (defaults[prop]['prompts'] || defaults['all']['prompts'])){
                                                 var msg = modules[prop][local]['msg'],
                                                     sibling = it(me).siblings();
+                                                console.log(msg)
                                                 if(defaults[prop]['messDepth'] === 'children'){
                                                     msg.s ? sibling.children[0].className = 'text-error':
                                                         sibling.children[0].className = 'text-success';
@@ -685,13 +685,17 @@
             }
         }
     }
-    it.prototype.trigger = function (elem, event) {
-        var evt = document.createEvent('HTMLEvents');
-        // initEvent接受3个参数：
-        // 事件类型，是否冒泡，是否阻止浏览器的默认行为
-        evt.initEvent(event, true, true);
-
-        elem.dispatchEvent(evt);
+    it.prototype.trigger = function (elem, type) {
+        var evt;
+        if(document.createEvent){
+            evt = document.createEvent('HTMLEvents');
+            evt.initEvent(type, true, true);
+            elem.dispatchEvent(evt);
+        }else{
+            evt = document.createEventObject();
+            evt.eventType = 'on' + type;
+            elem.fireEvent(evt.eventType, evt);
+        }
     }
 
     it.prototype.on = function (event, fn) {
@@ -741,12 +745,12 @@
         itMessages: {
             success: function (mess, el, ctrl, frNe, ind) {
                 mess = $.getMess(mess, 0, ctrl, el, frNe);
-                ind && (modules[ctrl][ind]['msg'] = {s:0, v:mess});
+                typeof ind !='undefined' && (modules[ctrl][ind]['msg'] = {s:0, v:mess});
                 this.trusteeship(1, mess, el, ctrl);
             },
             error: function (mess, el, ctrl, frNe, ind) {
                 mess = $.getMess(mess, 1, ctrl, el, frNe);
-                ind && (modules[ctrl][ind]['msg'] = {s:1, v:mess});
+                typeof ind !='undefined' && (modules[ctrl][ind]['msg'] = {s:1, v:mess});
                 this.trusteeship(0, mess, el, ctrl);
             },
             info: function (el, ctrl, ind) {
@@ -1218,7 +1222,6 @@
         $.submit();
     });
 
-    console.log(defaults)
 
     //返回公共对象
     return {'version': $.version, 'url': 'qingdou.me'}
